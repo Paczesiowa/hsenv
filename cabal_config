@@ -1,0 +1,9 @@
+remote-repo: hackage.haskell.org:http://hackage.haskell.org/packages/archive
+remote-repo-cache: <VIRTHUALENV>/.cabal/packages
+logs-dir: <VIRTHUALENV>/.cabal/logs
+world-file: <VIRTHUALENV>/.cabal/world
+package-db: <GHC_PACKAGE_PATH>
+build-summary: <VIRTHUALENV>/.cabal/logs/build.log
+remote-build-reporting: anonymous
+install-dirs user
+  prefix: <VIRTHUALENV>/.cabal

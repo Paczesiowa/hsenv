@@ -1,0 +1,16 @@
+VIRTHUALENV=<VIRTHUALENV>
+GHC_PACKAGE_PATH=<GHC_PACKAGE_PATH>
+
+# TODO: exit if VIRTHUALENV is defined
+
+export VIRTHUALENV
+
+echo -e "#!/bin/sh\nexport PATH=$PATH; rm $VIRTHUALENV/.virthualenv/deactivate; unset VIRTHUALENV; unset GHC_PACKAGE_PATH" > $VIRTHUALENV/.virthualenv/deactivate
+
+function deactivate {
+    source $VIRTHUALENV/.virthualenv/deactivate
+    unset deactivate
+}
+
+export GHC_PACKAGE_PATH
+export PATH=$VIRTHUALENV/.virthualenv/bin:$VIRTHUALENV/.cabal/bin:$PATH

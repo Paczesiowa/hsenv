@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# http://stackoverflow.com/questions/370047/what-is-the-most-elegant-way-to-remove-a-path-from-the-path-variable-in-bash
+path_remove ()  { export PATH=`echo -n $PATH | awk -v RS=: -v ORS=: '$0 != "'$1'"' | sed 's/:$//'`; }
+path_prepend () { path_remove $1; export PATH="$1:$PATH"; }
+
+VIRTHUALENV_BIN=$VIRTHUALENV/.virthualenv/bin
+
+path_remove $VIRTHUALENV_BIN
+CABAL=$(which cabal)
+path_prepend $VIRTHUALENV_BIN
+
+exec $CABAL --config-file=$VIRTHUALENV/.cabal/config $@
