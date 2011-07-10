@@ -1,17 +1,19 @@
 if [ -n "${VIRTHUALENV}" ]; then
     echo "Virtual Haskell Environment is already activated (${VIRTHUALENV})."
 else
-    VIRTHUALENV=<VIRTHUALENV>
-    export VIRTHUALENV
+    export VIRTHUALENV=<VIRTHUALENV>
+    export GHC_PACKAGE_PATH=<GHC_PACKAGE_PATH>
 
-    GHC_PACKAGE_PATH=<GHC_PACKAGE_PATH>
-    export GHC_PACKAGE_PATH
-
-    echo -e "#!/bin/sh\nexport PATH=${PATH}; rm ${VIRTHUALENV}/.virthualenv/deactivate; unset VIRTHUALENV; unset GHC_PACKAGE_PATH" > ${VIRTHUALENV}/.virthualenv/deactivate
+    for path in PATH; do
+        eval echo "export ${path}=\${${path}}"
+    done > ${VIRTHUALENV}/.virthualenv/env_backup
 
     function deactivate {
-        source ${VIRTHUALENV}/.virthualenv/deactivate
-        unset deactivate
+        source ${VIRTHUALENV}/.virthualenv/env_backup
+        rm ${VIRTHUALENV}/.virthualenv/env_backup
+        unset -v VIRTHUALENV
+        unset -v GHC_PACKAGE_PATH
+        unset -f deactivate
     }
 
     export PATH=${VIRTHUALENV}/.virthualenv/bin:${VIRTHUALENV}/.cabal/bin:${PATH}
