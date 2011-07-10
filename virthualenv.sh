@@ -29,5 +29,7 @@ else
 
     cat ~/projects/virthualenv/activate | sed "s:<VIRTHUALENV>:$VIRTHUALENV:g" | sed "s:<GHC_PACKAGE_PATH>:$GHC_PACKAGE_PATH:g" >> $VIRTHUALENV/.virthualenv/bin/activate
 
-    cp ~/projects/virthualenv/cabal $VIRTHUALENV/.virthualenv/bin/
+    CABAL_BINARY="$(which cabal)"
+    cat ~/projects/virthualenv/cabal | sed "s:<CABAL_BINARY>:${CABAL_BINARY}:g" > "${VIRTHUALENV}/.virthualenv/bin/cabal"
+    chmod +x "${VIRTHUALENV}/.virthualenv/bin/cabal"
 fi
