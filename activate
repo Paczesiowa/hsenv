@@ -3,20 +3,40 @@ if [ -n "${VIRTHUALENV}" ]; then
     return 1
 fi
 
-echo "Activating Virtual Haskell Environment (<VIRTHUALENV>)."
 export VIRTHUALENV="<VIRTHUALENV>"
-export GHC_PACKAGE_PATH="<GHC_PACKAGE_PATH>"
 
-for var in PATH; do
-    eval echo "export ${var}=\"\${${var}}\""
+cd "${VIRTHUALENV}"
+VIRTHUALENV_NAME="$(basename "$(pwd)")"
+cd - > /dev/null
+
+echo "Activating ${VIRTHUALENV_NAME} Virtual Haskell Environment (at ${VIRTHUALENV})."
+echo ""
+echo "Use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haskell environment."
+echo ""
+echo "To exit from this virtual environment, enter command 'deactivate'."
+
+for var in PATH PS1; do
+    eval echo "export ${var}=\\\"\${${var}}\\\""
 done > "${VIRTHUALENV}/.virthualenv/env_backup"
 
 deactivate() {
+    cd "${VIRTHUALENV}"
+    VIRTHUALENV_NAME="$(basename "$(pwd)")"
+    cd - > /dev/null
+
+    echo "Deactivating ${VIRTHUALENV_NAME} Virtual Haskell Environment (at ${VIRTHUALENV})."
+    echo "Restoring previous environment settings."
+
     . "${VIRTHUALENV}/.virthualenv/env_backup"
     rm "${VIRTHUALENV}/.virthualenv/env_backup"
+
     unset -v VIRTHUALENV
     unset -v GHC_PACKAGE_PATH
     unset -f deactivate
 }
 
 export PATH="${VIRTHUALENV}/.virthualenv/bin:${VIRTHUALENV}/.cabal/bin:${PATH}"
+export GHC_PACKAGE_PATH="<GHC_PACKAGE_PATH>"
+export PS1="(${VIRTHUALENV_NAME})${PS1}"
+
+unset -v VIRTHUALENV_NAME
