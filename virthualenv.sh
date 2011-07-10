@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -n "${VIRTHUALENV}" ]; then
     echo "Virtual Haskell Environment is already activated (${VIRTHUALENV})."
