@@ -1,5 +1,6 @@
 #!/bin/sh
 
 ORIG_CABAL_BINARY="<ORIG_CABAL_BINARY>"
+CABAL_CONFIG="<CABAL_CONFIG>"
 
-exec "${ORIG_CABAL_BINARY}" --config-file="${VIRTHUALENV}/.cabal/config" $@
+exec "${ORIG_CABAL_BINARY}" --config-file="${CABAL_CONFIG}" ${@}

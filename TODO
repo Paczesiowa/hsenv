@@ -1,4 +1,3 @@
-* subst VIRTHUALENV_CABAL_CONFIG in cabal wrapper
 * use a single .virthualenv dir to store everything (instead of extra .cabal and .ghc)
 * remove cabal update stub
 * tag 0.0
