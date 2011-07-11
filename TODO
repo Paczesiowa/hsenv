@@ -1,0 +1,8 @@
+* add name to env already active msg in activate script
+* use return/exit to fail early in virthualenv.sh isntead of huge if
+* store backup env vars in env itself
+* copy hash -r from python virtualenv's activate
+* use relative paths to skeleton files in virthualenv.sh
+* cleanup virthualenv.sh var usage
+* use a single .virthualenv dir to store everything (instead of extra .cabal and .ghc)
+* tag 0.0

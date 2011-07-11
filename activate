@@ -1,5 +1,3 @@
-# TODO: make VIRTHUALENV_NAME always present in (virtual) env
-
 if [ -n "${VIRTHUALENV}" ]; then
     # TODO: add name to msg
     echo "Virtual Haskell Environment is already activated (${VIRTHUALENV})."
