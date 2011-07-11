@@ -38,8 +38,16 @@ deactivate() {
     unset -v VIRTHUALENV_ENV_BACKUP
     unset -v GHC_PACKAGE_PATH
     unset -f deactivate
+
+    if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
+        hash -r
+    fi
 }
 
 export PATH="${VIRTHUALENV}/.virthualenv/bin:${VIRTHUALENV}/.cabal/bin:${PATH}"
 export GHC_PACKAGE_PATH="<GHC_PACKAGE_PATH>"
 export PS1="(${VIRTHUALENV_NAME})${PS1}"
+
+if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
+    hash -r
+fi
