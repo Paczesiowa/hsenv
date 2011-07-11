@@ -25,19 +25,18 @@ ORIG_CABAL_BINARY="$(which cabal)"
 
 VIRTHUALENV_NAME="${1}"
 VIRTHUALENV="$(pwd)/${VIRTHUALENV_NAME}"
-GHC_ARCH_OS_VER=i386-linux-7.0.4
-GHC_PACKAGE_PATH="${VIRTHUALENV}/.ghc/${GHC_ARCH_OS_VER}/package.conf.d"
-CABAL_DIR="${VIRTHUALENV}/.cabal"
-CABAL_CONFIG="${CABAL_DIR}/config"
 VIRTHUALENV_DIR="${VIRTHUALENV}/.virthualenv"
+GHC_PACKAGE_PATH="${VIRTHUALENV_DIR}/ghc_pkg_db"
+CABAL_DIR="${VIRTHUALENV_DIR}/cabal"
+CABAL_CONFIG="${CABAL_DIR}/config"
 VIRTHUALENV_BIN_DIR="${VIRTHUALENV_DIR}/bin"
 ACTIVATE_SCRIPT="${VIRTHUALENV_BIN_DIR}/activate"
 CABAL_WRAPPER="${VIRTHUALENV_BIN_DIR}/cabal"
 BOOT_PACKAGES="ffi rts ghc-prim integer-gmp base array containers filepath old-locale old-time unix directory pretty process Cabal bytestring ghc-binary bin-package-db hpc template-haskell ghc"
 
 mkdir "${VIRTHUALENV}"
-mkdir "${CABAL_DIR}"
 mkdir "${VIRTHUALENV_DIR}"
+mkdir "${CABAL_DIR}"
 mkdir "${VIRTHUALENV_BIN_DIR}"
 
 ghc-pkg init "${GHC_PACKAGE_PATH}"

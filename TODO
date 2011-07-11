@@ -1,3 +1,2 @@
-* use a single .virthualenv dir to store everything (instead of extra .cabal and .ghc)
 * remove cabal update stub
 * tag 0.0
