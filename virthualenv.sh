@@ -47,8 +47,7 @@ done
 
 cat "${CABAL_CONFIG_SKEL}" | sed "s:<CABAL_DIR>:${CABAL_DIR}:g" | sed "s:<GHC_PACKAGE_PATH>:${GHC_PACKAGE_PATH}:g" > "${CABAL_CONFIG}"
 
-# GHC_PACKAGE_PATH="${GHC_PACKAGE_PATH}" cabal --config-file="${CABAL_CONFIG}" update
-cp -r /tmp/packages "${CABAL_DIR}"
+GHC_PACKAGE_PATH="${GHC_PACKAGE_PATH}" cabal --config-file="${CABAL_CONFIG}" update
 
 cat "${ACTIVATE_SKEL}" | sed "s:<VIRTHUALENV_NAME>:${VIRTHUALENV_NAME}:g" | sed "s:<VIRTHUALENV>:${VIRTHUALENV}:g" | sed "s:<GHC_PACKAGE_PATH>:${GHC_PACKAGE_PATH}:g" >> "${ACTIVATE_SCRIPT}"
 
