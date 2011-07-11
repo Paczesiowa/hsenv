@@ -1,4 +1,3 @@
-* use return/exit to fail early in virthualenv.sh isntead of huge if
 * store backup env vars in env itself
 * copy hash -r from python virtualenv's activate
 * use relative paths to skeleton files in virthualenv.sh
