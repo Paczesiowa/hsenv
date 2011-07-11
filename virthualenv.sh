@@ -6,6 +6,17 @@ if [ -n "${VIRTHUALENV}" ]; then
     exit 1
 fi
 
+usage() {
+    echo "usage: ${0} ENV_NAME"
+    echo ""
+    echo "Creates Virtual Haskell Environment in the directory ENV_NAME"
+    exit 1
+}
+
+[ "${#}" = "1" ] || usage
+[ "${1}" = "--help" ] && usage
+[ "${1}" = "-h" ] && usage
+
 VIRTHUALENV_SCRIPT_DIR="$(dirname ${0})"
 CABAL_CONFIG_SKEL="${VIRTHUALENV_SCRIPT_DIR}/cabal_config"
 CABAL_WRAPPER_SKEL="${VIRTHUALENV_SCRIPT_DIR}/cabal"
