@@ -1,3 +1,4 @@
 * cleanup virthualenv.sh var usage
+* try to bootstrap env without cd
 * use a single .virthualenv dir to store everything (instead of extra .cabal and .ghc)
 * tag 0.0
