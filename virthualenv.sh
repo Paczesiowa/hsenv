@@ -46,7 +46,7 @@ for package in ${BOOT_PACKAGES}; do
     ghc-pkg describe "${package}" | (GHC_PACKAGE_PATH="${GHC_PACKAGE_PATH}" ghc-pkg register -)
 done
 
-cat "${CABAL_CONFIG_SKEL}" | sed "s:<VIRTHUALENV>:${VIRTHUALENV}:g" | sed "s:<GHC_PACKAGE_PATH>:${GHC_PACKAGE_PATH}:g" > "${CABAL_CONFIG}"
+cat "${CABAL_CONFIG_SKEL}" | sed "s:<CABAL_DIR>:${CABAL_DIR}:g" | sed "s:<GHC_PACKAGE_PATH>:${GHC_PACKAGE_PATH}:g" > "${CABAL_CONFIG}"
 
 # GHC_PACKAGE_PATH="${GHC_PACKAGE_PATH}" cabal --config-file="${CABAL_CONFIG}" update
 cp -r /tmp/packages "${CABAL_DIR}"
