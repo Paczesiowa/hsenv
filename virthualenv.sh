@@ -6,6 +6,11 @@ if [ -n "${VIRTHUALENV}" ]; then
     exit 1
 fi
 
+VIRTHUALENV_SCRIPT_DIR="$(dirname ${0})"
+CABAL_CONFIG_SKEL="${VIRTHUALENV_SCRIPT_DIR}/cabal_config"
+CABAL_WRAPPER_SKEL="${VIRTHUALENV_SCRIPT_DIR}/cabal"
+ACTIVATE_SKEL="${VIRTHUALENV_SCRIPT_DIR}/activate"
+
 ENV=$1
 VIRTHUALENV="$(pwd)/$ENV"
 VIRTHUALENV_NAME="${ENV}"
@@ -23,7 +28,7 @@ for package in $BOOT_PACKAGES; do
     ghc-pkg describe $package | (GHC_PACKAGE_PATH=$GHC_PACKAGE_PATH ghc-pkg register -)
 done
 
-cat ~/projects/virthualenv/cabal_config | sed "s:<VIRTHUALENV>:$VIRTHUALENV:g" | sed "s:<GHC_PACKAGE_PATH>:$GHC_PACKAGE_PATH:g" > $VIRTHUALENV/.cabal/config
+cat "${CABAL_CONFIG_SKEL}" | sed "s:<VIRTHUALENV>:$VIRTHUALENV:g" | sed "s:<GHC_PACKAGE_PATH>:$GHC_PACKAGE_PATH:g" > $VIRTHUALENV/.cabal/config
 
 # GHC_PACKAGE_PATH=$GHC_PACKAGE_PATH cabal --config-file=$VIRTHUALENV/.cabal/config update
 cp -r /tmp/packages $VIRTHUALENV/.cabal/
@@ -31,8 +36,8 @@ cp -r /tmp/packages $VIRTHUALENV/.cabal/
 mkdir $VIRTHUALENV/.virthualenv
 mkdir $VIRTHUALENV/.virthualenv/bin
 
-cat ~/projects/virthualenv/activate | sed "s:<VIRTHUALENV_NAME>:$VIRTHUALENV_NAME:g" | sed "s:<VIRTHUALENV>:$VIRTHUALENV:g" | sed "s:<GHC_PACKAGE_PATH>:$GHC_PACKAGE_PATH:g" >> $VIRTHUALENV/.virthualenv/bin/activate
+cat "${ACTIVATE_SKEL}" | sed "s:<VIRTHUALENV_NAME>:$VIRTHUALENV_NAME:g" | sed "s:<VIRTHUALENV>:$VIRTHUALENV:g" | sed "s:<GHC_PACKAGE_PATH>:$GHC_PACKAGE_PATH:g" >> $VIRTHUALENV/.virthualenv/bin/activate
 
 CABAL_BINARY="$(which cabal)"
-cat ~/projects/virthualenv/cabal | sed "s:<CABAL_BINARY>:${CABAL_BINARY}:g" > "${VIRTHUALENV}/.virthualenv/bin/cabal"
+cat "${CABAL_WRAPPER_SKEL}" | sed "s:<CABAL_BINARY>:${CABAL_BINARY}:g" > "${VIRTHUALENV}/.virthualenv/bin/cabal"
 chmod +x "${VIRTHUALENV}/.virthualenv/bin/cabal"

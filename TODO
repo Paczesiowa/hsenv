@@ -1,4 +1,3 @@
-* use relative paths to skeleton files in virthualenv.sh
 * cleanup virthualenv.sh var usage
 * use a single .virthualenv dir to store everything (instead of extra .cabal and .ghc)
 * tag 0.0
