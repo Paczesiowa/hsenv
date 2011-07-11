@@ -5,6 +5,7 @@ if [ -n "${VIRTHUALENV}" ]; then
 else
     ENV=$1
     VIRTHUALENV="$(pwd)/$ENV"
+    VIRTHUALENV_NAME="${ENV}"
     GHC_ARCH_OS_VER=i386-linux-7.0.4
     GHC_PACKAGE_PATH="$VIRTHUALENV/.ghc/$GHC_ARCH_OS_VER/package.conf.d"
 
@@ -27,7 +28,7 @@ else
     mkdir $VIRTHUALENV/.virthualenv
     mkdir $VIRTHUALENV/.virthualenv/bin
 
-    cat ~/projects/virthualenv/activate | sed "s:<VIRTHUALENV>:$VIRTHUALENV:g" | sed "s:<GHC_PACKAGE_PATH>:$GHC_PACKAGE_PATH:g" >> $VIRTHUALENV/.virthualenv/bin/activate
+    cat ~/projects/virthualenv/activate | sed "s:<VIRTHUALENV_NAME>:$VIRTHUALENV_NAME:g" | sed "s:<VIRTHUALENV>:$VIRTHUALENV:g" | sed "s:<GHC_PACKAGE_PATH>:$GHC_PACKAGE_PATH:g" >> $VIRTHUALENV/.virthualenv/bin/activate
 
     CABAL_BINARY="$(which cabal)"
     cat ~/projects/virthualenv/cabal | sed "s:<CABAL_BINARY>:${CABAL_BINARY}:g" > "${VIRTHUALENV}/.virthualenv/bin/cabal"
