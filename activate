@@ -1,6 +1,11 @@
 if [ -n "${VIRTHUALENV}" ]; then
-    # TODO: add name to msg
-    echo "Virtual Haskell Environment is already activated (${VIRTHUALENV})."
+    if [ "<VIRTHUALENV>" = "${VIRTHUALENV}" ]; then
+        echo "${VIRTHUALENV_NAME} Virtual Haskell Environment is already active."
+    else
+        echo "There is already ${VIRTHUALENV_NAME} Virtual Haskell Environment activated."
+        echo "Deactivate it first (using command 'deactivate'), to activate"
+        echo "<VIRTHUALENV_NAME> environment."
+    fi
     return 1
 fi
 

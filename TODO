@@ -1,4 +1,3 @@
-* add name to env already active msg in activate script
 * use return/exit to fail early in virthualenv.sh isntead of huge if
 * store backup env vars in env itself
 * copy hash -r from python virtualenv's activate
