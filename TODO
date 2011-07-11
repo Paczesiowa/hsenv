@@ -1,5 +1,7 @@
 * cleanup virthualenv.sh var usage
 * try to bootstrap env without cd
 * add usage and exit if $# != 1
+* subst VIRTHUALENV_CABAL_CONFIG in cabal wrapper
 * use a single .virthualenv dir to store everything (instead of extra .cabal and .ghc)
+* remove cabal update stub
 * tag 0.0
