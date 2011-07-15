@@ -17,6 +17,10 @@ import Data.Maybe(catMaybes)
 
 import Paths_virthualenv (getDataFileName)
 
+data Options = Options { verbose :: Bool
+                       , vheName :: String
+                       }
+
 getEnvVar :: String -> IO (Maybe String)
 getEnvVar var = Just `fmap` getEnv var `catch` noValueHandler
     where noValueHandler e | isDoesNotExistError e = return Nothing
@@ -46,6 +50,11 @@ usage = do
     putStrLn $ "usage: " ++ name ++ " ENV_NAME"
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the directory ENV_NAME"
+
+parseArgs :: [String] -> IO (Maybe Options)
+parseArgs ["--verbose", name] = return $ Just $ Options True name
+parseArgs [name] = return $ Just $ Options False name
+parseArgs _ = return Nothing
 
 -- TODO: it should return IO (Maybe String)
 -- TODO: it should walk the PATH elems, instead of using system's which util
@@ -157,11 +166,15 @@ main = do
     case args of
       ["--help"] -> usage
       ["-h"]     -> usage
-      [arg]      -> realMain arg
-      _          -> usage >> exitFailure
+      _          -> do
+                opts <- parseArgs args
+                case opts of
+                  Nothing      -> usage >> exitFailure
+                  Just options -> realMain options
 
-realMain :: String -> IO ()
-realMain virthualEnvName = do
+realMain :: Options -> IO ()
+realMain options = do
+    let virthualEnvName = vheName options
     cabalConfigSkel  <- getDataFileName "cabal_config"
     cabalWrapperSkel <- getDataFileName "cabal"
     activateSkel     <- getDataFileName "activate"
