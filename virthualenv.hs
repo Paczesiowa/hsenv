@@ -47,6 +47,14 @@ usage = do
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the directory ENV_NAME"
 
+-- TODO: it should return IO (Maybe String)
+-- TODO: it should walk the PATH elems, instead of using system's which util
+which :: String -> IO String
+which progName = do
+  output <- readProcess "which" [progName] ""
+  let result = init output -- skip final newline
+  return result
+
 prettyPkgInfo :: PackageIdentifier -> String
 prettyPkgInfo (PackageIdentifier (PackageName pkgName) (Version [] _)) = pkgName
 prettyPkgInfo (PackageIdentifier (PackageName pkgName) (Version numbers _)) =
@@ -157,7 +165,7 @@ realMain virthualEnvName = do
     cabalConfigSkel  <- getDataFileName "cabal_config"
     cabalWrapperSkel <- getDataFileName "cabal"
     activateSkel     <- getDataFileName "activate"
-    origCabalBinary  <- init `fmap` readProcess "which" ["cabal"] "" -- skip newline
+    origCabalBinary  <- which "cabal"
 
     cwd <- getCurrentDirectory
     let virthualEnv    = cwd </> virthualEnvName
