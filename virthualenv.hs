@@ -40,13 +40,12 @@ checkVHE = do
                     putStrLn $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
             return True
 
-usage :: IO a
+usage :: IO ()
 usage = do
     name <- getProgName
     putStrLn $ "usage: " ++ name ++ " ENV_NAME"
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the directory ENV_NAME"
-    exitFailure
 
 prettyPkgInfo :: PackageIdentifier -> String
 prettyPkgInfo (PackageIdentifier (PackageName pkgName) (Version [] _)) = pkgName
@@ -145,12 +144,16 @@ main :: IO ()
 main = do
     envActive <- checkVHE
     when envActive exitFailure
+
     args <- getArgs
-    virthualEnvName <- case args of
-                        ["--help"] -> usage
-                        ["-h"]     -> usage
-                        [arg]      -> return arg
-                        _          -> usage
+    case args of
+      ["--help"] -> usage
+      ["-h"]     -> usage
+      [arg]      -> realMain arg
+      _          -> usage >> exitFailure
+
+realMain :: String -> IO ()
+realMain virthualEnvName = do
     cabalConfigSkel  <- getDataFileName "cabal_config"
     cabalWrapperSkel <- getDataFileName "cabal"
     activateSkel     <- getDataFileName "activate"
