@@ -17,7 +17,7 @@ import Distribution.Version
 import Distribution.Text
 import Data.Maybe(catMaybes)
 import Control.Monad.Trans (MonadIO, liftIO)
-import Control.Monad.Reader (ReaderT, runReaderT, ask, MonadReader)
+import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, ask, asks)
 
 import Paths_virthualenv (getDataFileName)
 
@@ -30,6 +30,13 @@ newtype MyMonad a = MyMonad { unMyMonad :: ReaderT Options IO a }
 
 runMyMonad :: MyMonad a -> Options -> IO a
 runMyMonad = runReaderT . unMyMonad
+
+data DirStructure = DirStructure { virthualEnv       :: FilePath
+                                 , virthualEnvDir    :: FilePath
+                                 , ghcPackagePath    :: FilePath
+                                 , cabalDir          :: FilePath
+                                 , virthualEnvBinDir :: FilePath
+                                 }
 
 getEnvVar :: String -> IO (Maybe String)
 getEnvVar var = Just `fmap` getEnv var `catch` noValueHandler
@@ -167,6 +174,40 @@ cabalUpdate ghcPackagePath cabalConfig = do
   waitForProcess pid
   return ()
 
+-- returns record containing paths to all important directories
+-- inside virtual environment dir structure
+vheDirStructure :: MyMonad DirStructure
+vheDirStructure = do
+  cwd <- liftIO getCurrentDirectory
+  virthualEnvName <- asks vheName
+  let virthualEnvLocation    = cwd </> virthualEnvName
+      virthualEnvDirLocation = virthualEnvLocation </> ".virthualenv"
+  return DirStructure { virthualEnv       = virthualEnvLocation
+                      , virthualEnvDir    = virthualEnvDirLocation
+                      , ghcPackagePath    = virthualEnvDirLocation </> "ghc_pkg_db"
+                      , cabalDir          = virthualEnvDirLocation </> "cabal"
+                      , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
+                      }
+
+-- returns location of cabal's config file inside virtual environment dir structure
+cabalConfigLocation :: MyMonad FilePath
+cabalConfigLocation = do
+  dirStructure <- vheDirStructure
+  return $ cabalDir dirStructure </> "config"
+
+-- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
+installCabalWrapper :: MyMonad ()
+installCabalWrapper = do
+  cabalConfig <- cabalConfigLocation
+  cabalWrapperSkel <- liftIO $ getDataFileName "cabal"
+  origCabalBinary  <- liftIO $ which "cabal"
+  dirStructure <- vheDirStructure
+  let cabalWrapper = virthualEnvBinDir dirStructure </> "cabal"
+  liftIO $ sed [ ("<ORIG_CABAL_BINARY>", origCabalBinary)
+               , ("<CABAL_CONFIG>", cabalConfig)
+               ] cabalWrapperSkel cabalWrapper
+  liftIO $ makeExecutable cabalWrapper
+
 main :: IO ()
 main = do
     envActive <- checkVHE
@@ -187,9 +228,7 @@ realMain = do
     options <- ask
     let virthualEnvName = vheName options
     cabalConfigSkel  <- liftIO $ getDataFileName "cabal_config"
-    cabalWrapperSkel <- liftIO $ getDataFileName "cabal"
     activateSkel     <- liftIO $ getDataFileName "activate"
-    origCabalBinary  <- liftIO $ which "cabal"
 
     cwd <- liftIO getCurrentDirectory
     let virthualEnv    = cwd </> virthualEnvName
@@ -217,8 +256,5 @@ realMain = do
         , ("<VIRTHUALENV>", virthualEnv)
         , ("<GHC_PACKAGE_PATH>", ghcPackagePath)
         ] activateSkel activateScript
-    liftIO $ sed [ ("<ORIG_CABAL_BINARY>", origCabalBinary)
-        , ("<CABAL_CONFIG>", cabalConfig)
-        ] cabalWrapperSkel cabalWrapper
-    liftIO $ makeExecutable cabalWrapper
+    installCabalWrapper
     liftIO $ cabalUpdate ghcPackagePath cabalConfig
