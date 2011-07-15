@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving
+  #-}
 import System.Environment (getEnv, getProgName, getArgs, getEnvironment)
 import System.IO (stderr, hPutStrLn)
 import System.IO.Error (isDoesNotExistError)
@@ -14,12 +16,20 @@ import Distribution.Package
 import Distribution.Version
 import Distribution.Text
 import Data.Maybe(catMaybes)
+import Control.Monad.Trans (MonadIO, liftIO)
+import Control.Monad.Reader (ReaderT, runReaderT, ask, MonadReader)
 
 import Paths_virthualenv (getDataFileName)
 
 data Options = Options { verbose :: Bool
                        , vheName :: String
                        }
+
+newtype MyMonad a = MyMonad { unMyMonad :: ReaderT Options IO a }
+    deriving (Monad, MonadReader Options, MonadIO)
+
+runMyMonad :: MyMonad a -> Options -> IO a
+runMyMonad = runReaderT . unMyMonad
 
 getEnvVar :: String -> IO (Maybe String)
 getEnvVar var = Just `fmap` getEnv var `catch` noValueHandler
@@ -170,17 +180,18 @@ main = do
                 opts <- parseArgs args
                 case opts of
                   Nothing      -> usage >> exitFailure
-                  Just options -> realMain options
+                  Just options -> runMyMonad realMain options
 
-realMain :: Options -> IO ()
-realMain options = do
+realMain :: MyMonad ()
+realMain = do
+    options <- ask
     let virthualEnvName = vheName options
-    cabalConfigSkel  <- getDataFileName "cabal_config"
-    cabalWrapperSkel <- getDataFileName "cabal"
-    activateSkel     <- getDataFileName "activate"
-    origCabalBinary  <- which "cabal"
+    cabalConfigSkel  <- liftIO $ getDataFileName "cabal_config"
+    cabalWrapperSkel <- liftIO $ getDataFileName "cabal"
+    activateSkel     <- liftIO $ getDataFileName "activate"
+    origCabalBinary  <- liftIO $ which "cabal"
 
-    cwd <- getCurrentDirectory
+    cwd <- liftIO getCurrentDirectory
     let virthualEnv    = cwd </> virthualEnvName
         virthualEnvDir = virthualEnv </> ".virthualenv"
         ghcPackagePath = virthualEnvDir </> "ghc_pkg_db"
@@ -195,20 +206,19 @@ realMain options = do
                        , "Cabal", "bytestring", "ghc-binary"
                        , "bin-package-db", "hpc", "template-haskell", "ghc"
                        ]
-    mapM_ createDirectory [virthualEnv, virthualEnvDir, cabalDir, virthualEnvBinDir]
-    rawSystem "ghc-pkg" ["init", ghcPackagePath]
-    transplantPackage ghcPackagePath "base"
+    liftIO $ mapM_ createDirectory [virthualEnv, virthualEnvDir, cabalDir, virthualEnvBinDir]
+    liftIO $ rawSystem "ghc-pkg" ["init", ghcPackagePath]
+    liftIO $ transplantPackage ghcPackagePath "base"
     -- mapM_ (transplantPackage ghcPackagePath) bootPackages
-    print cabalConfigSkel
-    sed [ ("<GHC_PACKAGE_PATH>", ghcPackagePath)
+    liftIO $ sed [ ("<GHC_PACKAGE_PATH>", ghcPackagePath)
         , ("<CABAL_DIR>", cabalDir)
         ] cabalConfigSkel cabalConfig
-    sed [ ("<VIRTHUALENV_NAME>", virthualEnvName)
+    liftIO $ sed [ ("<VIRTHUALENV_NAME>", virthualEnvName)
         , ("<VIRTHUALENV>", virthualEnv)
         , ("<GHC_PACKAGE_PATH>", ghcPackagePath)
         ] activateSkel activateScript
-    sed [ ("<ORIG_CABAL_BINARY>", origCabalBinary)
+    liftIO $ sed [ ("<ORIG_CABAL_BINARY>", origCabalBinary)
         , ("<CABAL_CONFIG>", cabalConfig)
         ] cabalWrapperSkel cabalWrapper
-    makeExecutable cabalWrapper
-    cabalUpdate ghcPackagePath cabalConfig
+    liftIO $ makeExecutable cabalWrapper
+    liftIO $ cabalUpdate ghcPackagePath cabalConfig
