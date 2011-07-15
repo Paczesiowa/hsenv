@@ -1,4 +1,5 @@
 import System.Environment (getEnv, getProgName, getArgs, getEnvironment)
+import System.IO (stderr, hPutStrLn)
 import System.IO.Error (isDoesNotExistError)
 import System.Exit (exitFailure, ExitCode(..))
 import System.Process (readProcess, runInteractiveProcess, waitForProcess, runProcess)
@@ -21,18 +22,23 @@ getEnvVar var = Just `fmap` getEnv var `catch` noValueHandler
     where noValueHandler e | isDoesNotExistError e = return Nothing
                            | otherwise             = ioError e
 
-checkVHE :: IO ()
+-- check if any virtual env is already active
+checkVHE :: IO Bool
 checkVHE = do
-    x <- getEnvVar "VIRTHUALENV"
-    case x of
-        Nothing  -> return ()
-        Just vhe -> do
-            y <- getEnvVar "VIRTHUALENV_NAME"
-            case y of
-                Nothing -> error "VIRTHUALENV var is defined, but no VIRHTUALENV_NAME defined."
-                Just vheName -> do
-                    putStrLn $ "There is already active " ++ vheName ++ " Virtual Haskell Environment (at " ++ vhe ++ ")."
-                    exitFailure
+    virthualEnv <- getEnvVar "VIRTHUALENV"
+    case virthualEnv of
+        Nothing   -> return False
+        Just path -> do
+            virthualEnvName <- getEnvVar "VIRTHUALENV_NAME"
+            case virthualEnvName of
+                Nothing -> do
+                       hPutStrLn stderr $
+                           "warning: VIRTHUALENV environment variable is defined"
+                        ++ ", but no VIRHTUALENV_NAME environment variable defined."
+                       putStrLn $ "There is already active Virtual Haskell Environment (at " ++ path ++ ")."
+                Just name -> do
+                    putStrLn $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
+            return True
 
 usage :: IO a
 usage = do
@@ -137,7 +143,8 @@ cabalUpdate ghcPackagePath cabalConfig = do
 
 main :: IO ()
 main = do
-    checkVHE
+    envActive <- checkVHE
+    when envActive exitFailure
     args <- getArgs
     virthualEnvName <- case args of
                         ["--help"] -> usage
