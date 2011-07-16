@@ -251,7 +251,7 @@ cabalUpdate = do
   cabalConfig <- cabalConfigLocation
   dirStructure <- vheDirStructure
   let env' = ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,_) -> k /= "GHC_PACKAGE_PATH") env
-  debug "Updating cabal package database inside Virtual Haskell Environment."
+  liftIO $ putStrLn "Updating cabal package database inside Virtual Haskell Environment."
   (_, _, _, pid) <-
       liftIO $ runInteractiveProcess "cabal"
                             ["--config-file=" ++ cabalConfig, "update"]
@@ -290,13 +290,13 @@ installCabalWrapper = do
   origCabalBinary  <- liftIO $ which "cabal"
   dirStructure     <- vheDirStructure
   let cabalWrapper = virthualEnvBinDir dirStructure </> "cabal"
-  debug $ concat [ "Installing cabal wrapper using "
-                 , origCabalBinary
-                 , " and "
-                 , cabalConfig
-                 , " at "
-                 , cabalWrapper
-                 ]
+  liftIO $ putStrLn $ concat [ "Installing cabal wrapper using "
+                             , origCabalBinary
+                             , " and "
+                             , cabalConfig
+                             , " at "
+                             , cabalWrapper
+                             ]
   liftIO $ sed [ ("<ORIG_CABAL_BINARY>", origCabalBinary)
                , ("<CABAL_CONFIG>", cabalConfig)
                ] cabalWrapperSkel cabalWrapper
@@ -309,7 +309,7 @@ installActivateScript = do
   activateSkel    <- liftIO $ getDataFileName "activate"
   dirStructure    <- vheDirStructure
   let activateScript = virthualEnvBinDir dirStructure </> "activate"
-  debug $ "Installing activate script at " ++ activateScript
+  liftIO $ putStrLn $ "Installing activate script at " ++ activateScript
   liftIO $ sed [ ("<VIRTHUALENV_NAME>", virthualEnvName)
                , ("<VIRTHUALENV>", virthualEnv dirStructure)
                , ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
@@ -322,7 +322,7 @@ installCabalConfig = do
   cabalConfigSkel <- liftIO $ getDataFileName "cabal_config"
   cabalConfig     <- cabalConfigLocation
   dirStructure    <- vheDirStructure
-  debug $ "Installing cabal config at " ++ cabalConfig
+  liftIO $ putStrLn $ "Installing cabal config at " ++ cabalConfig
   liftIO $ sed [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
                , ("<CABAL_DIR>", cabalDir dirStructure)
                ] cabalConfigSkel cabalConfig
@@ -330,10 +330,8 @@ installCabalConfig = do
 createDirStructure :: MyMonad ()
 createDirStructure = do
   dirStructure <- vheDirStructure
-  debug "Creating Virtual Haskell directory structure:"
+  liftIO $ putStrLn "Creating Virtual Haskell directory structure"
   debugBlock $ do
-    debug $ "main directory: " ++ virthualEnv dirStructure
-    liftIO $ createDirectory $ virthualEnv dirStructure
     debug $ "virthualenv directory: " ++ virthualEnvDir dirStructure
     liftIO $ createDirectory $ virthualEnvDir dirStructure
     debug $ "cabal directory: " ++ cabalDir dirStructure
@@ -344,7 +342,7 @@ createDirStructure = do
 initGhcDb :: MyMonad ()
 initGhcDb = do
   dirStructure <- vheDirStructure
-  debug $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
+  liftIO $ putStrLn $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
   _ <- liftIO $ rawSystem "ghc-pkg" ["init", ghcPackagePath dirStructure]
   return ()
 
