@@ -145,7 +145,7 @@ transplantPackage package = do
     let versionStrings = map (!!1) $ map words $ lines out
         versions = catMaybes $ map (\s -> parseCheck parse s "version") versionStrings
     debugBlock $ debug $ "Found: " ++ unwords (map prettyVersion versions)
-    let version = minimum versions
+    let version = maximum versions
     debugBlock $ debug $ "Using version: " ++ prettyVersion version
     let pkgInfo = PackageIdentifier (PackageName package) version
     transplantPkg pkgInfo
