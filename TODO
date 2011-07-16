@@ -1,1 +1,2 @@
 * cleanup virthualenv.cabal
+* cabal wrapper should find real cabal further down the PATH (to handle installing new cabal-install in the env)

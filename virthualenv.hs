@@ -231,6 +231,7 @@ cabalUpdate = do
   cabalConfig <- cabalConfigLocation
   dirStructure <- vheDirStructure
   let env' = ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,_) -> k /= "GHC_PACKAGE_PATH") env
+  debug "Updating cabal package database inside Virtual Haskell Environment."
   (_, _, _, pid) <-
       liftIO $ runInteractiveProcess "cabal"
                             ["--config-file=" ++ cabalConfig, "update"]
