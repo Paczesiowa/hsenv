@@ -346,6 +346,14 @@ initGhcDb = do
   _ <- liftIO $ rawSystem "ghc-pkg" ["init", ghcPackagePath dirStructure]
   return ()
 
+copyBaseSystem :: MyMonad ()
+copyBaseSystem = do
+  liftIO $ putStrLn "Copying necessary packages from original GHC package database"
+  debugBlock $ do
+    transplantPackage "base"
+    transplantPackage "Cabal"
+    transplantPackage "haskell98"
+
 main :: IO ()
 main = do
     envActive <- checkVHE
@@ -365,9 +373,7 @@ realMain :: MyMonad ()
 realMain = do
   createDirStructure
   initGhcDb
-  transplantPackage "base"
-  transplantPackage "Cabal"
-  transplantPackage "haskell98"
+  copyBaseSystem
   installCabalConfig
   installActivateScript
   installCabalWrapper
