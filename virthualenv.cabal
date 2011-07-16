@@ -55,7 +55,7 @@ Executable virthualenv
   -- .hs or .lhs file containing the Main module.
   Main-is: virthualenv.hs
 
-  ghc-options: -threaded
+  ghc-options: -threaded -Wall
 
   -- Packages needed in order to build this package.
   Build-depends: base >= 4.2.0.0 && < 4.4

@@ -4,7 +4,7 @@ import System.Environment (getEnv, getProgName, getArgs, getEnvironment)
 import System.IO (stderr, hPutStrLn, hGetContents, hPutStr, Handle)
 import System.IO.Error (isDoesNotExistError)
 import System.Exit (exitFailure, ExitCode(..))
-import System.Process (readProcess, runInteractiveProcess, waitForProcess, runProcess)
+import System.Process (readProcess, runInteractiveProcess, waitForProcess)
 import System.Cmd (rawSystem)
 import System.Directory (getCurrentDirectory, createDirectory, executable, getPermissions, setPermissions)
 import System.FilePath ((</>))
@@ -17,7 +17,7 @@ import Distribution.Version
 import Distribution.Text
 import Data.Maybe(catMaybes)
 import Control.Monad.Trans (MonadIO, liftIO)
-import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, ask, asks)
+import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
 
 import Paths_virthualenv (getDataFileName)
@@ -79,8 +79,8 @@ getEnvVar var = Just `fmap` getEnv var `catch` noValueHandler
 -- check if any virtual env is already active
 checkVHE :: IO Bool
 checkVHE = do
-    virthualEnv <- getEnvVar "VIRTHUALENV"
-    case virthualEnv of
+    virthualEnvVar <- getEnvVar "VIRTHUALENV"
+    case virthualEnvVar of
         Nothing   -> return False
         Just path -> do
             virthualEnvName <- getEnvVar "VIRTHUALENV_NAME"
@@ -119,16 +119,15 @@ prettyVersion (Version [] _) = ""
 prettyVersion (Version numbers _) = intercalate "." $ map show numbers
 
 prettyPkgInfo :: PackageIdentifier -> String
-prettyPkgInfo (PackageIdentifier (PackageName pkgName) (Version [] _)) = pkgName
-prettyPkgInfo (PackageIdentifier (PackageName pkgName) version) =
-  pkgName ++ "-" ++ prettyVersion version
+prettyPkgInfo (PackageIdentifier (PackageName name) (Version [] _)) = name
+prettyPkgInfo (PackageIdentifier (PackageName name) version) =
+  name ++ "-" ++ prettyVersion version
 
 getDeps :: PackageIdentifier -> MyMonad [PackageIdentifier]
 getDeps pkgInfo = do
   debug $ "Extracting dependencies of " ++ prettyPkgInfo pkgInfo
   x <- liftIO $ readProcess "ghc-pkg" ["field", prettyPkgInfo pkgInfo, "depends"] ""
-  let trim = reverse . dropWhile isSpace . reverse . dropWhile isSpace
-      depStrings = tail $ words x
+  let depStrings = tail $ words x
   mapM parsePackageName depStrings
 
 -- transplant a package from simple name (e.g. base)
@@ -157,12 +156,11 @@ getVirtualEnvironment :: MyMonad [(String, String)]
 getVirtualEnvironment = do
   env <- liftIO getEnvironment
   dirStructure <- vheDirStructure
-  return $ ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,v) -> k /= "GHC_PACKAGE_PATH") env
+  return $ ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,_) -> k /= "GHC_PACKAGE_PATH") env
 
 -- check if this package is already installed in Virtual Haskell Environment
 checkIfInstalled :: PackageIdentifier -> MyMonad Bool
 checkIfInstalled pkgInfo = do
-  env <- getVirtualEnvironment
   let package = prettyPkgInfo pkgInfo
   debug $ "Checking if " ++ package ++ " is already installed."
   (_, exitCode) <- debugBlock $ envProcess "ghc-pkg" ["describe", package] Nothing
@@ -187,28 +185,27 @@ transplantPkg pkgInfo = do
       mapM_ transplantPkg deps
       movePackage pkgInfo
 
--- parseCheck :: ReadP a a -> String -> String -> IO a
+parseCheck :: Monad m => ReadP a a -> String -> String -> m a
 parseCheck parser str what =
   case [ x | (x,ys) <- readP_to_S parser str, all isSpace ys ] of
     [x] -> return x
     _ -> error ("cannot parse \'" ++ str ++ "\' as a " ++ what)
 
--- parsePackageName :: String -> IO PackageIdentifier
+parsePackageName :: Monad m => String -> m PackageIdentifier
 parsePackageName str | "builtin_" `isPrefixOf` str =
-                         let pkgName = drop (length "builtin_") str
-                         in return $ PackageIdentifier (PackageName pkgName) $ Version [] []
+                         let name = drop (length "builtin_") str
+                         in return $ PackageIdentifier (PackageName name) $ Version [] []
                      | otherwise = parseCheck parse str "package identifier"
 
 -- copy single package that already has all deps satisfied
 movePackage :: PackageIdentifier -> MyMonad ()
 movePackage pkgInfo = do
-  env <- getVirtualEnvironment
   let package = prettyPkgInfo pkgInfo
   debug $ "Moving package " ++ prettyPkgInfo pkgInfo ++ " to Virtual Haskell Environment."
   (_, out, _, pid) <-
       liftIO $ runInteractiveProcess "ghc-pkg" ["describe", package] Nothing Nothing
-  (_, exitCode) <- envProcess "ghc-pkg" ["register", "-"] (Just out)
-  liftIO $ waitForProcess pid
+  _ <- envProcess "ghc-pkg" ["register", "-"] (Just out)
+  _ <- liftIO $ waitForProcess pid
   return ()
 
 subst :: (String, String) -> String -> String
@@ -232,13 +229,13 @@ cabalUpdate = do
   env <- liftIO getEnvironment
   cabalConfig <- cabalConfigLocation
   dirStructure <- vheDirStructure
-  let env' = ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,v) -> k /= "GHC_PACKAGE_PATH") env
+  let env' = ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,_) -> k /= "GHC_PACKAGE_PATH") env
   (_, _, _, pid) <-
       liftIO $ runInteractiveProcess "cabal"
                             ["--config-file=" ++ cabalConfig, "update"]
                             Nothing
                             (Just env')
-  liftIO $ waitForProcess pid
+  _ <- liftIO $ waitForProcess pid
   return ()
 
 -- returns record containing paths to all important directories
@@ -323,7 +320,7 @@ initGhcDb :: MyMonad ()
 initGhcDb = do
   dirStructure <- vheDirStructure
   debug $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
-  liftIO $ rawSystem "ghc-pkg" ["init", ghcPackagePath dirStructure]
+  _ <- liftIO $ rawSystem "ghc-pkg" ["init", ghcPackagePath dirStructure]
   return ()
 
 main :: IO ()
@@ -349,4 +346,4 @@ realMain = do
   installCabalConfig
   installActivateScript
   installCabalWrapper
-  -- cabalUpdate
+  cabalUpdate
