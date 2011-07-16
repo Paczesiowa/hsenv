@@ -7,7 +7,7 @@ import System.Exit (exitFailure, ExitCode(..))
 import System.Process (readProcess, runInteractiveProcess, waitForProcess)
 import System.Cmd (rawSystem)
 import System.Directory (getCurrentDirectory, createDirectory, executable, getPermissions, setPermissions)
-import System.FilePath ((</>))
+import System.FilePath ((</>), splitPath)
 import Data.List (isPrefixOf, intercalate)
 import Control.Monad
 import Data.Char (isSpace)
@@ -98,14 +98,34 @@ checkVHE = do
 usage :: IO ()
 usage = do
     name <- getProgName
-    putStrLn $ "usage: " ++ name ++ " ENV_NAME"
+    putStrLn $ "usage: " ++ name ++ " [FLAGS]"
     putStrLn ""
-    putStrLn "Creates Virtual Haskell Environment in the directory ENV_NAME"
+    putStrLn "Flags:"
+    putStrLn "-h --help Show this help message"
+    putStrLn "--verbose Print some debugging info"
+    putStrLn "--name=NAME Use Name for name of Virthual Haskell Environment"
+    putStrLn ""
+    putStrLn "Creates Virtual Haskell Environment in the current directory."
+    putStrLn "All files will be stored in the .virthualenv/ subdirectory."
 
 parseArgs :: [String] -> IO (Maybe Options)
-parseArgs ["--verbose", name] = return $ Just $ Options True name
-parseArgs [name] = return $ Just $ Options False name
-parseArgs _ = return Nothing
+parseArgs args = do
+  let (verbosityFlags, nonVerbosityFlags) = span (== "--verbose") args
+      verbosity = not $ null verbosityFlags
+      (nameFlags, nonNameFlags) = span ("--name=" `isPrefixOf`) nonVerbosityFlags
+  name <- case nameFlags of
+           nameFlag:_ -> return $ drop (length "--name=") nameFlag
+           [] -> do
+             cwd <- liftIO getCurrentDirectory
+             let dirs = splitPath cwd
+                 name = last dirs
+             when verbosity $ putStrLn $ "Using current directory name as Virtual Haskell Environment name: " ++ name
+             return name
+  case nonNameFlags of
+    [] -> return $ Just Options { verbose = verbosity
+                               , vheName = name
+                               }
+    _ -> return Nothing
 
 -- TODO: it should return IO (Maybe String)
 -- TODO: it should walk the PATH elems, instead of using system's which util
@@ -245,8 +265,7 @@ cabalUpdate = do
 vheDirStructure :: MyMonad DirStructure
 vheDirStructure = do
   cwd <- liftIO getCurrentDirectory
-  virthualEnvName <- asks vheName
-  let virthualEnvLocation    = cwd </> virthualEnvName
+  let virthualEnvLocation    = cwd
       virthualEnvDirLocation = virthualEnvLocation </> ".virthualenv"
       cabalDirLocation       = virthualEnvDirLocation </> "cabal"
   return DirStructure { virthualEnv       = virthualEnvLocation
