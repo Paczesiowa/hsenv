@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving
-  , Haskell2010
   #-}
 import System.Environment (getEnv, getProgName, getArgs, getEnvironment)
 import System.IO (stderr, hPutStrLn, hGetContents, hPutStr, Handle)
@@ -49,7 +48,7 @@ debug s = do
   if flag then do
       depth <- gets logDepth
       liftIO $ putStrLn $ replicate (fromInteger depth) ' ' ++ s
-  else
+   else
       return ()
 
 -- run a process in a Virtual Haskell Environment
@@ -182,7 +181,7 @@ transplantPkg pkgInfo = do
     flag <- checkIfInstalled pkgInfo
     if flag then
         return ()
-    else do
+     else do
       deps <- getDeps pkgInfo
       debug $ "Found: " ++ unwords (map prettyPkgInfo deps)
       mapM_ transplantPkg deps
