@@ -343,6 +343,8 @@ realMain = do
   createDirStructure
   initGhcDb
   transplantPackage "base"
+  transplantPackage "Cabal"
+  transplantPackage "haskell98"
   installCabalConfig
   installActivateScript
   installCabalWrapper
