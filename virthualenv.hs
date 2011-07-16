@@ -68,6 +68,7 @@ data DirStructure = DirStructure { virthualEnv       :: FilePath
                                  , virthualEnvDir    :: FilePath
                                  , ghcPackagePath    :: FilePath
                                  , cabalDir          :: FilePath
+                                 , cabalBinDir       :: FilePath
                                  , virthualEnvBinDir :: FilePath
                                  }
 
@@ -246,10 +247,12 @@ vheDirStructure = do
   virthualEnvName <- asks vheName
   let virthualEnvLocation    = cwd </> virthualEnvName
       virthualEnvDirLocation = virthualEnvLocation </> ".virthualenv"
+      cabalDirLocation       = virthualEnvDirLocation </> "cabal"
   return DirStructure { virthualEnv       = virthualEnvLocation
                       , virthualEnvDir    = virthualEnvDirLocation
                       , ghcPackagePath    = virthualEnvDirLocation </> "ghc_pkg_db"
-                      , cabalDir          = virthualEnvDirLocation </> "cabal"
+                      , cabalDir          = cabalDirLocation
+                      , cabalBinDir       = cabalDirLocation </> "bin"
                       , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
                       }
 
@@ -290,6 +293,8 @@ installActivateScript = do
   liftIO $ sed [ ("<VIRTHUALENV_NAME>", virthualEnvName)
                , ("<VIRTHUALENV>", virthualEnv dirStructure)
                , ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
+               , ("<VIRTHUALENV_BIN_DIR>", virthualEnvBinDir dirStructure)
+               , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
                ] activateSkel activateScript
 
 installCabalConfig :: MyMonad ()

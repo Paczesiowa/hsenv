@@ -44,7 +44,7 @@ deactivate() {
     fi
 }
 
-export PATH="${VIRTHUALENV}/.virthualenv/bin:${VIRTHUALENV}/.cabal/bin:${PATH}"
+export PATH="<VIRTHUALENV_BIN_DIR>:<CABAL_BIN_DIR>:${PATH}"
 export GHC_PACKAGE_PATH="<GHC_PACKAGE_PATH>"
 export PS1="(${VIRTHUALENV_NAME})${PS1}"
 

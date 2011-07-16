@@ -1,2 +1,1 @@
-* use vars from virthualenv.sh script when setting PATH in activate script
 * cleanup virthualenv.cabal
