@@ -18,4 +18,4 @@ done
 ORIG_CABAL_BINARY="$(PATH=${OUTER_PATH} which cabal)"
 CABAL_CONFIG="<CABAL_CONFIG>"
 
-exec "${ORIG_CABAL_BINARY}" --config-file="${CABAL_CONFIG}" ${@}
+exec "${ORIG_CABAL_BINARY}" --config-file="${CABAL_CONFIG}" "${@}"
