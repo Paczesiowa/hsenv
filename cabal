@@ -1,6 +1,21 @@
 #!/bin/sh
 
-ORIG_CABAL_BINARY="<ORIG_CABAL_BINARY>"
+PATH_ELEMS="$(echo ${PATH} | sed 's/:/\n/g')"
+
+OUTER_PATH=""
+i=0
+
+for PATH_ELEM in ${PATH_ELEMS}; do
+    if [ "${i}" ">" "0" ]; then
+        if [ "${i}" ">" "1" ]; then
+            OUTER_PATH="${OUTER_PATH}:"
+        fi
+        OUTER_PATH="${OUTER_PATH}${PATH_ELEM}"
+    fi
+    (( i = ${i} + 1 ))
+done
+
+ORIG_CABAL_BINARY="$(PATH=${OUTER_PATH} which cabal)"
 CABAL_CONFIG="<CABAL_CONFIG>"
 
 exec "${ORIG_CABAL_BINARY}" --config-file="${CABAL_CONFIG}" ${@}

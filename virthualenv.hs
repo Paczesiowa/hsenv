@@ -127,14 +127,6 @@ parseArgs args = do
                                }
     _ -> return Nothing
 
--- TODO: it should return IO (Maybe String)
--- TODO: it should walk the PATH elems, instead of using system's which util
-which :: String -> IO String
-which progName = do
-  output <- readProcess "which" [progName] ""
-  let result = init output -- skip final newline
-  return result
-
 prettyVersion :: Version -> String
 prettyVersion (Version [] _) = ""
 prettyVersion (Version numbers _) = intercalate "." $ map show numbers
@@ -287,18 +279,14 @@ installCabalWrapper :: MyMonad ()
 installCabalWrapper = do
   cabalConfig      <- cabalConfigLocation
   cabalWrapperSkel <- liftIO $ getDataFileName "cabal"
-  origCabalBinary  <- liftIO $ which "cabal"
   dirStructure     <- vheDirStructure
   let cabalWrapper = virthualEnvBinDir dirStructure </> "cabal"
   liftIO $ putStrLn $ concat [ "Installing cabal wrapper using "
-                             , origCabalBinary
-                             , " and "
                              , cabalConfig
                              , " at "
                              , cabalWrapper
                              ]
-  liftIO $ sed [ ("<ORIG_CABAL_BINARY>", origCabalBinary)
-               , ("<CABAL_CONFIG>", cabalConfig)
+  liftIO $ sed [ ("<CABAL_CONFIG>", cabalConfig)
                ] cabalWrapperSkel cabalWrapper
   liftIO $ makeExecutable cabalWrapper
 
