@@ -6,7 +6,7 @@ import System.IO.Error (isDoesNotExistError)
 import System.Exit (exitFailure, ExitCode(..))
 import System.Process (readProcess, runInteractiveProcess, waitForProcess)
 import System.Cmd (rawSystem)
-import System.Directory (getCurrentDirectory, createDirectory, executable, getPermissions, setPermissions)
+import System.Directory (getCurrentDirectory, createDirectory, executable, getPermissions, setPermissions, removeDirectoryRecursive, setCurrentDirectory)
 import System.FilePath ((</>), splitPath)
 import Data.List (isPrefixOf, intercalate)
 import Control.Monad
@@ -70,6 +70,7 @@ data DirStructure = DirStructure { virthualEnv       :: FilePath
                                  , cabalDir          :: FilePath
                                  , cabalBinDir       :: FilePath
                                  , virthualEnvBinDir :: FilePath
+                                 , tmpDir            :: FilePath
                                  }
 
 getEnvVar :: String -> IO (Maybe String)
@@ -267,6 +268,7 @@ vheDirStructure = do
                       , cabalDir          = cabalDirLocation
                       , cabalBinDir       = cabalDirLocation </> "bin"
                       , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
+                      , tmpDir            = virthualEnvLocation </> "tmp"
                       }
 
 -- returns location of cabal's config file inside virtual environment dir structure
@@ -327,6 +329,8 @@ createDirStructure = do
     liftIO $ createDirectory $ cabalDir dirStructure
     debug $ "virthualenv bin directory: " ++ virthualEnvBinDir dirStructure
     liftIO $ createDirectory $ virthualEnvBinDir dirStructure
+    debug $ "tmp directory: " ++ tmpDir dirStructure
+    liftIO $ createDirectory $ tmpDir dirStructure
 
 initGhcDb :: MyMonad ()
 initGhcDb = do
@@ -367,3 +371,5 @@ realMain = do
   installActivateScript
   installCabalWrapper
   cabalUpdate
+  dirStructure <- vheDirStructure
+  liftIO $ removeDirectoryRecursive $ tmpDir dirStructure
