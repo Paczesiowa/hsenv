@@ -19,11 +19,18 @@ import Data.Maybe(catMaybes)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
+import qualified Codec.Archive.Tar as Tar
+import Codec.Compression.BZip
+import qualified Data.ByteString.Lazy as BS
 
 import Paths_virthualenv (getDataFileName)
 
-data Options = Options { verbose :: Bool
-                       , vheName :: String
+data GhcSource = System
+               | Tarball FilePath
+
+data Options = Options { verbose   :: Bool
+                       , vheName   :: String
+                       , ghcSource :: GhcSource
                        }
 
 data MyState = MyState { logDepth :: Integer
@@ -71,6 +78,7 @@ data DirStructure = DirStructure { virthualEnv       :: FilePath
                                  , cabalBinDir       :: FilePath
                                  , virthualEnvBinDir :: FilePath
                                  , tmpDir            :: FilePath
+                                 , ghcDir            :: FilePath
                                  }
 
 getEnvVar :: String -> IO (Maybe String)
@@ -106,6 +114,12 @@ usage = do
     putStrLn "--verbose Print some debugging info"
     putStrLn "--name=NAME Use Name for name of Virthual Haskell Environment"
     putStrLn "            (defaults to the name of the current directory)"
+    putStrLn "--ghc=X     X can be one of:"
+    putStrLn "              system - Virtual Haskell Environment will use"
+    putStrLn "                       system copy of ghc (and cabal)"
+    putStrLn "                       this is the default behaviour"
+    putStrLn "              FILE   - where FILE is a path to a tarball with"
+    putStrLn "                       ghc (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the current directory."
     putStrLn "All files will be stored in the .virthualenv/ subdirectory."
@@ -123,9 +137,14 @@ parseArgs args = do
                  name = last dirs
              when verbosity $ putStrLn $ "Using current directory name as Virtual Haskell Environment name: " ++ name
              return name
-  case nonNameFlags of
-    [] -> return $ Just Options { verbose = verbosity
-                               , vheName = name
+  let (ghcSourceFlags, restOfFlags) = span ("--ghc=" `isPrefixOf`) nonNameFlags
+      ghc = case ghcSourceFlags of
+              []     -> System
+              path:_ -> Tarball $ drop (length "--ghc=") path
+  case restOfFlags of
+    [] -> return $ Just Options { verbose   = verbosity
+                               , vheName   = name
+                               , ghcSource = ghc
                                }
     _ -> return Nothing
 
@@ -269,6 +288,7 @@ vheDirStructure = do
                       , cabalBinDir       = cabalDirLocation </> "bin"
                       , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
                       , tmpDir            = virthualEnvLocation </> "tmp"
+                      , ghcDir            = virthualEnvDirLocation </> "ghc"
                       }
 
 -- returns location of cabal's config file inside virtual environment dir structure
@@ -362,9 +382,43 @@ main = do
                   Nothing      -> usage >> exitFailure
                   Just options -> runMyMonad realMain options
 
+externalGhcVersion :: MyMonad Bool
+externalGhcVersion = do
+  ghc <- asks ghcSource
+  case ghc of
+    System    -> return False
+    Tarball _ -> return True
+
+installGhc :: MyMonad ()
+installGhc = do
+  debug "Installing GHC"
+  ghc          <- asks ghcSource
+  case ghc of
+    System              -> debugBlock $ debug "Using system version of GHC - nothing to install."
+    Tarball tarballPath -> debugBlock $ installExternalGhc tarballPath
+
+installExternalGhc :: FilePath -> MyMonad ()
+installExternalGhc tarballPath = do
+  liftIO $ putStrLn $ "Installing GHC from " ++ tarballPath
+  dirStructure <- vheDirStructure
+  let tmpGhcDir = tmpDir dirStructure </> "ghc"
+  liftIO $ createDirectory tmpGhcDir
+  debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
+  _ <- liftIO $ readProcess  "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] ""
+  let configureScript = tmpGhcDir </> "configure"
+  debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
+  cwd <- liftIO getCurrentDirectory
+  liftIO $ setCurrentDirectory tmpGhcDir
+  _ <- liftIO $ readProcess configureScript ["--prefix=" ++ ghcDir dirStructure] ""
+  debug "Installing GHC"
+  _ <- liftIO $ readProcess "make" ["install"] ""
+  liftIO $ setCurrentDirectory cwd
+  return ()
+
 realMain :: MyMonad ()
 realMain = do
   createDirStructure
+  installGhc
   initGhcDb
   copyBaseSystem
   installCabalConfig
