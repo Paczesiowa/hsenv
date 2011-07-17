@@ -104,6 +104,7 @@ usage = do
     putStrLn "-h --help Show this help message"
     putStrLn "--verbose Print some debugging info"
     putStrLn "--name=NAME Use Name for name of Virthual Haskell Environment"
+    putStrLn "            (defaults to the name of the current directory)"
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the current directory."
     putStrLn "All files will be stored in the .virthualenv/ subdirectory."
