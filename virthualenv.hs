@@ -199,7 +199,7 @@ checkIfInstalled :: PackageIdentifier -> MyMonad Bool
 checkIfInstalled pkgInfo = do
   let package = prettyPkgInfo pkgInfo
   debug $ "Checking if " ++ package ++ " is already installed."
-  (_, exitCode) <- debugBlock $ envProcess "ghc-pkg" ["describe", package] Nothing
+  (exitCode, _, _) <- debugBlock $ insideGhcPkg ["describe", package] Nothing
   debugBlock $ case exitCode of
                  ExitSuccess -> do
                    debug "It is."
