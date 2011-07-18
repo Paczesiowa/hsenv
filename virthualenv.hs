@@ -1,12 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving
   #-}
 import System.Environment (getEnv, getProgName, getArgs, getEnvironment)
-import System.IO (stderr, hPutStrLn, hGetContents, hPutStr, Handle, hFlush, hClose)
+import System.IO (stderr, hPutStrLn, hGetContents, hPutStr, hFlush, hClose)
 import Control.Concurrent (forkIO, putMVar, takeMVar, newEmptyMVar)
 import Control.Exception (evaluate)
 import System.IO.Error (isDoesNotExistError)
 import System.Exit (exitFailure, ExitCode(..))
-import System.Process (readProcess, runInteractiveProcess, waitForProcess)
+import System.Process (readProcess, runInteractiveProcess, waitForProcess, readProcessWithExitCode)
 import System.Directory (getCurrentDirectory, createDirectory, executable, getPermissions, setPermissions, removeDirectoryRecursive, setCurrentDirectory)
 import System.FilePath ((</>), splitPath)
 import Data.List (isPrefixOf, intercalate)
@@ -61,13 +61,13 @@ debug s = do
 
 -- run a process in a Virtual Haskell Environment
 -- returns process output and exit status
-envProcess :: String -> [String] -> Maybe Handle -> MyMonad (String, ExitCode)
+envProcess :: String -> [String] -> Maybe String -> MyMonad (String, ExitCode)
 envProcess prog args input = do
   env <- getVirtualEnvironment
-  (inp, out, _, pid) <- liftIO $ runInteractiveProcess prog args Nothing (Just env)
+  (inh, out, _, pid) <- liftIO $ runInteractiveProcess prog args Nothing (Just env)
   case input of
-    Nothing     -> return ()
-    Just handle -> liftIO $ hGetContents handle >>= hPutStr inp
+    Nothing  -> return ()
+    Just inp -> liftIO $ hPutStr inh inp
   result   <- liftIO $ hGetContents out
   exitCode <- liftIO $ waitForProcess pid
   return (result, exitCode)
@@ -161,7 +161,7 @@ prettyPkgInfo (PackageIdentifier (PackageName name) version) =
 getDeps :: PackageIdentifier -> MyMonad [PackageIdentifier]
 getDeps pkgInfo = do
   debug $ "Extracting dependencies of " ++ prettyPkgInfo pkgInfo
-  x <- liftIO $ readProcess "ghc-pkg" ["field", prettyPkgInfo pkgInfo, "depends"] ""
+  (_, x, _) <- outsideGhcPkg ["field", prettyPkgInfo pkgInfo, "depends"]
   let depStrings = tail $ words x
   mapM parsePackageName depStrings
 
@@ -172,7 +172,7 @@ transplantPackage package = do
   debug $ "Copying package " ++ package ++ " to Virtual Haskell Environment."
   debugBlock $ do
     debug $ "Choosing package with highest version number."
-    out <- debugBlock $ liftIO $ readProcess "ghc-pkg" ["field", package, "version"] ""
+    (_, out, _) <- debugBlock $ outsideGhcPkg ["field", package, "version"]
     -- example output:
     -- version: 1.1.4
     -- version: 1.2.0.3
@@ -237,10 +237,8 @@ movePackage :: PackageIdentifier -> MyMonad ()
 movePackage pkgInfo = do
   let package = prettyPkgInfo pkgInfo
   debug $ "Moving package " ++ prettyPkgInfo pkgInfo ++ " to Virtual Haskell Environment."
-  (_, out, _, pid) <-
-      liftIO $ runInteractiveProcess "ghc-pkg" ["describe", package] Nothing Nothing
-  _ <- envProcess "ghc-pkg" ["register", "-"] (Just out)
-  _ <- liftIO $ waitForProcess pid
+  (_, out, _) <- outsideGhcPkg ["describe", package]
+  _ <- insideGhcPkg ["register", "-"] (Just out)
   return ()
 
 subst :: (String, String) -> String -> String
@@ -357,7 +355,7 @@ initGhcDb :: MyMonad ()
 initGhcDb = do
   dirStructure <- vheDirStructure
   liftIO $ putStrLn $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
-  _ <- outsideProcess "ghc-pkg" ["init", ghcPackagePath dirStructure] Nothing
+  _ <- outsideGhcPkg ["init", ghcPackagePath dirStructure]
   return ()
 
 copyBaseSystem :: MyMonad ()
@@ -398,9 +396,18 @@ installGhc = do
     System              -> debugBlock $ debug "Using system version of GHC - nothing to install."
     Tarball tarballPath -> debugBlock $ installExternalGhc tarballPath
 
+outsideGhcPkg :: [String] -> MyMonad (ExitCode, String, String)
+outsideGhcPkg args = do
+  ghc <- asks ghcSource
+  dirStructure <- vheDirStructure
+  let ghcPkg = case ghc of
+                 System    -> "ghc-pkg"
+                 Tarball _ -> ghcDir dirStructure </> "bin" </> "ghc-pkg"
+  liftIO $ readProcessWithExitCode ghcPkg args ""
+
 type Environment = [(String, String)]
 
-readProcessWithExitCodeInEnv :: Environment -> FilePath -> [String] -> Maybe String -> IO (String, String, ExitCode)
+readProcessWithExitCodeInEnv :: Environment -> FilePath -> [String] -> Maybe String -> IO (ExitCode, String, String)
 readProcessWithExitCodeInEnv env progName args input = do
   (inh, outh, errh, pid) <- runInteractiveProcess progName args Nothing (Just env)
   out <- hGetContents outh
@@ -410,7 +417,7 @@ readProcessWithExitCodeInEnv env progName args input = do
   errMVar <- newEmptyMVar
   _ <- forkIO $ evaluate (length err) >> putMVar errMVar ()
   case input of
-    Just inp | not (null inp) -> hPutStr inh inp >> hFlush inh 
+    Just inp | not (null inp) -> hPutStr inh inp >> hFlush inh
     _ -> return ()
   hClose inh
   takeMVar outMVar
@@ -418,24 +425,17 @@ readProcessWithExitCodeInEnv env progName args input = do
   takeMVar errMVar
   hClose errh
   ex <- waitForProcess pid
-  return (out, err, ex)
+  return (ex, out, err)
 
-update :: Eq k => (v -> v) -> k -> [(k,v)] -> [(k,v)]
-update f key = map aux
-  where aux x@(k,v) | k == key   = (k, f v)
-                    | otherwise = x
-
-outsideProcess :: FilePath -> [String] -> Maybe String -> MyMonad (String, String, ExitCode)
-outsideProcess progName args input = do
-  env <- liftIO getEnvironment
+insideGhcPkg :: [String] -> Maybe String -> MyMonad (ExitCode, String, String)
+insideGhcPkg args input = do
   ghc <- asks ghcSource
   dirStructure <- vheDirStructure
-  let env' = case ghc of
-               System    -> env
-               Tarball _ ->
-                 let externalGhcBinDir = ghcDir dirStructure </> "bin"
-                 in update (\x -> externalGhcBinDir ++ ":" ++ x) "PATH" env
-  liftIO $ readProcessWithExitCodeInEnv env' progName args input  
+  env <- getVirtualEnvironment
+  let ghcPkg = case ghc of
+                 System    -> "ghc-pkg"
+                 Tarball _ -> ghcDir dirStructure </> "bin" </> "ghc-pkg"
+  liftIO $ readProcessWithExitCodeInEnv env ghcPkg args input
 
 installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
