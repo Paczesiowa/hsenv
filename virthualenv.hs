@@ -80,6 +80,7 @@ data DirStructure = DirStructure { virthualEnv       :: FilePath
                                  , virthualEnvBinDir :: FilePath
                                  , tmpDir            :: FilePath
                                  , ghcDir            :: FilePath
+                                 , ghcBinDir         :: FilePath
                                  }
 
 getEnvVar :: String -> IO (Maybe String)
@@ -280,6 +281,7 @@ vheDirStructure = do
   let virthualEnvLocation    = cwd
       virthualEnvDirLocation = virthualEnvLocation </> ".virthualenv"
       cabalDirLocation       = virthualEnvDirLocation </> "cabal"
+      ghcDirLocation         = virthualEnvDirLocation </> "ghc"
   return DirStructure { virthualEnv       = virthualEnvLocation
                       , virthualEnvDir    = virthualEnvDirLocation
                       , ghcPackagePath    = virthualEnvDirLocation </> "ghc_pkg_db"
@@ -287,7 +289,8 @@ vheDirStructure = do
                       , cabalBinDir       = cabalDirLocation </> "bin"
                       , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
                       , tmpDir            = virthualEnvLocation </> "tmp"
-                      , ghcDir            = virthualEnvDirLocation </> "ghc"
+                      , ghcDir            = ghcDirLocation
+                      , ghcBinDir         = ghcDirLocation </> "bin"
                       }
 
 -- returns location of cabal's config file inside virtual environment dir structure
@@ -325,6 +328,7 @@ installActivateScript = do
                , ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
                , ("<VIRTHUALENV_BIN_DIR>", virthualEnvBinDir dirStructure)
                , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
+               , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
                ] activateSkel activateScript
 
 installCabalConfig :: MyMonad ()

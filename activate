@@ -44,7 +44,11 @@ deactivate() {
     fi
 }
 
-export PATH="<VIRTHUALENV_BIN_DIR>:<CABAL_BIN_DIR>:${PATH}"
+if [ "<GHC_BIN_DIR>" ]; then
+    export PATH="<VIRTHUALENV_BIN_DIR>:<CABAL_BIN_DIR>:<GHC_BIN_DIR>:${PATH}"
+else
+    export PATH="<VIRTHUALENV_BIN_DIR>:<CABAL_BIN_DIR>:${PATH}"
+fi
 export GHC_PACKAGE_PATH="<GHC_PACKAGE_PATH>"
 export PS1="(${VIRTHUALENV_NAME})${PS1}"
 
