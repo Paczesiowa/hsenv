@@ -12,7 +12,7 @@ for PATH_ELEM in ${PATH_ELEMS}; do
         fi
         OUTER_PATH="${OUTER_PATH}${PATH_ELEM}"
     fi
-    (( i = ${i} + 1 ))
+    i=$(( ${i} + 1 ))
 done
 
 ORIG_CABAL_BINARY="$(PATH=${OUTER_PATH} which cabal)"
