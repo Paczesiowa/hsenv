@@ -1,11 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving
   #-}
 import System.Environment (getEnv, getProgName, getArgs, getEnvironment)
-import System.IO (stderr, hPutStrLn, hGetContents, hPutStr, Handle)
+import System.IO (stderr, hPutStrLn, hGetContents, hPutStr, Handle, hFlush, hClose)
+import Control.Concurrent (forkIO, putMVar, takeMVar, newEmptyMVar)
+import Control.Exception (evaluate)
 import System.IO.Error (isDoesNotExistError)
 import System.Exit (exitFailure, ExitCode(..))
 import System.Process (readProcess, runInteractiveProcess, waitForProcess)
-import System.Cmd (rawSystem)
 import System.Directory (getCurrentDirectory, createDirectory, executable, getPermissions, setPermissions, removeDirectoryRecursive, setCurrentDirectory)
 import System.FilePath ((</>), splitPath)
 import Data.List (isPrefixOf, intercalate)
@@ -356,7 +357,7 @@ initGhcDb :: MyMonad ()
 initGhcDb = do
   dirStructure <- vheDirStructure
   liftIO $ putStrLn $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
-  _ <- liftIO $ rawSystem "ghc-pkg" ["init", ghcPackagePath dirStructure]
+  _ <- outsideProcess "ghc-pkg" ["init", ghcPackagePath dirStructure] Nothing
   return ()
 
 copyBaseSystem :: MyMonad ()
@@ -396,6 +397,45 @@ installGhc = do
   case ghc of
     System              -> debugBlock $ debug "Using system version of GHC - nothing to install."
     Tarball tarballPath -> debugBlock $ installExternalGhc tarballPath
+
+type Environment = [(String, String)]
+
+readProcessWithExitCodeInEnv :: Environment -> FilePath -> [String] -> Maybe String -> IO (String, String, ExitCode)
+readProcessWithExitCodeInEnv env progName args input = do
+  (inh, outh, errh, pid) <- runInteractiveProcess progName args Nothing (Just env)
+  out <- hGetContents outh
+  outMVar <- newEmptyMVar
+  _ <- forkIO $ evaluate (length out) >> putMVar outMVar ()
+  err <- hGetContents errh
+  errMVar <- newEmptyMVar
+  _ <- forkIO $ evaluate (length err) >> putMVar errMVar ()
+  case input of
+    Just inp | not (null inp) -> hPutStr inh inp >> hFlush inh 
+    _ -> return ()
+  hClose inh
+  takeMVar outMVar
+  hClose outh
+  takeMVar errMVar
+  hClose errh
+  ex <- waitForProcess pid
+  return (out, err, ex)
+
+update :: Eq k => (v -> v) -> k -> [(k,v)] -> [(k,v)]
+update f key = map aux
+  where aux x@(k,v) | k == key   = (k, f v)
+                    | otherwise = x
+
+outsideProcess :: FilePath -> [String] -> Maybe String -> MyMonad (String, String, ExitCode)
+outsideProcess progName args input = do
+  env <- liftIO getEnvironment
+  ghc <- asks ghcSource
+  dirStructure <- vheDirStructure
+  let env' = case ghc of
+               System    -> env
+               Tarball _ ->
+                 let externalGhcBinDir = ghcDir dirStructure </> "bin"
+                 in update (\x -> externalGhcBinDir ++ ":" ++ x) "PATH" env
+  liftIO $ readProcessWithExitCodeInEnv env' progName args input  
 
 installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
