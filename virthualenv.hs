@@ -359,8 +359,16 @@ initGhcDb :: MyMonad ()
 initGhcDb = do
   dirStructure <- vheDirStructure
   liftIO $ putStrLn $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
-  _ <- outsideGhcPkg ["init", ghcPackagePath dirStructure]
-  return ()
+  (_, out, _) <- outsideGhcPkg ["--version"]
+  let versionString      = last $ words out
+      Just version       = parseCheck parse versionString "version"
+      ghc_6_12_1_version = Version [6,12,1] []
+  if version < ghc_6_12_1_version then do
+      debigBlock $ debug "Detected GHC older than 6.12, initializing GHC_PACKAGE_PATH to file with '[]'"
+      liftIO $ writeFile (ghcPackagePath dirStructure) "[]"
+   else do
+      _ <- outsideGhcPkg ["init", ghcPackagePath dirStructure]
+      return ()
 
 copyBaseSystem :: MyMonad ()
 copyBaseSystem = do
