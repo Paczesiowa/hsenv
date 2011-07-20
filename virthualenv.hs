@@ -321,11 +321,15 @@ installActivateScript = do
   virthualEnvName <- asks vheName
   activateSkel    <- liftIO $ getDataFileName "activate"
   dirStructure    <- vheDirStructure
+  ghc <- asks ghcSource
+  let ghcPkgPath = case ghc of
+                     System    -> ghcPackagePath dirStructure
+                     Tarball _ -> ghcPackagePath dirStructure ++ ":"
   let activateScript = virthualEnvBinDir dirStructure </> "activate"
   liftIO $ putStrLn $ "Installing activate script at " ++ activateScript
   liftIO $ sed [ ("<VIRTHUALENV_NAME>", virthualEnvName)
                , ("<VIRTHUALENV>", virthualEnv dirStructure)
-               , ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
+               , ("<GHC_PACKAGE_PATH>", ghcPkgPath)
                , ("<VIRTHUALENV_BIN_DIR>", virthualEnvBinDir dirStructure)
                , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
                , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
@@ -374,9 +378,14 @@ copyBaseSystem :: MyMonad ()
 copyBaseSystem = do
   liftIO $ putStrLn "Copying necessary packages from original GHC package database"
   debugBlock $ do
-    transplantPackage "base"
-    transplantPackage "Cabal"
-    transplantPackage "haskell98"
+    ghc <- asks ghcSource
+    case ghc of
+      System -> do
+        transplantPackage "base"
+        transplantPackage "Cabal"
+        transplantPackage "haskell98"
+      Tarball _ -> do
+        debug "Using external GHC - nothing to copy, Virtual environment will reuse GHC package database"
 
 main :: IO ()
 main = do
