@@ -368,7 +368,7 @@ initGhcDb = do
       Just version       = parseCheck parse versionString "version"
       ghc_6_12_1_version = Version [6,12,1] []
   if version < ghc_6_12_1_version then do
-      debigBlock $ debug "Detected GHC older than 6.12, initializing GHC_PACKAGE_PATH to file with '[]'"
+      debugBlock $ debug "Detected GHC older than 6.12, initializing GHC_PACKAGE_PATH to file with '[]'"
       liftIO $ writeFile (ghcPackagePath dirStructure) "[]"
    else do
       _ <- outsideGhcPkg ["init", ghcPackagePath dirStructure]
