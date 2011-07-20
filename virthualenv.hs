@@ -384,6 +384,9 @@ copyBaseSystem = do
         transplantPackage "base"
         transplantPackage "Cabal"
         transplantPackage "haskell98"
+        transplantPackage "haskell2010"
+        transplantPackage "ghc"
+        transplantPackage "ghc-binary"
       Tarball _ -> do
         debug "Using external GHC - nothing to copy, Virtual environment will reuse GHC package database"
 
