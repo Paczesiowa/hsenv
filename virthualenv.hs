@@ -24,7 +24,7 @@ import qualified Codec.Archive.Tar as Tar
 import Codec.Compression.BZip
 import qualified Data.ByteString.Lazy as BS
 
-import Paths_virthualenv (getDataFileName)
+import Skeletons
 
 data GhcSource = System
                | Tarball FilePath
@@ -247,10 +247,9 @@ subst _ [] = []
 subst (from, to) input@(x:xs) | from `isPrefixOf` input = to ++ subst (from, to) (drop (length from) input)
                               | otherwise = x:subst (from, to) xs
 
-sed :: [(String, String)] -> FilePath -> FilePath -> IO ()
-sed substs inFile outFile = do
-  inp <- readFile inFile
-  let out = foldr subst inp substs
+sed :: [(String, String)] -> String -> FilePath -> IO ()
+sed substs input outFile = do
+  let out = foldr subst input substs
   writeFile outFile out
 
 makeExecutable :: FilePath -> IO ()
@@ -303,7 +302,6 @@ cabalConfigLocation = do
 installCabalWrapper :: MyMonad ()
 installCabalWrapper = do
   cabalConfig      <- cabalConfigLocation
-  cabalWrapperSkel <- liftIO $ getDataFileName "cabal"
   dirStructure     <- vheDirStructure
   let cabalWrapper = virthualEnvBinDir dirStructure </> "cabal"
   liftIO $ putStrLn $ concat [ "Installing cabal wrapper using "
@@ -326,7 +324,6 @@ externalGhcPkgDb = do
 installActivateScript :: MyMonad ()
 installActivateScript = do
   virthualEnvName <- asks vheName
-  activateSkel    <- liftIO $ getDataFileName "activate"
   dirStructure    <- vheDirStructure
   ghc <- asks ghcSource
   ghcPkgPath <-
@@ -347,7 +344,6 @@ installActivateScript = do
 
 installCabalConfig :: MyMonad ()
 installCabalConfig = do
-  cabalConfigSkel <- liftIO $ getDataFileName "cabal_config"
   cabalConfig     <- cabalConfigLocation
   dirStructure    <- vheDirStructure
   liftIO $ putStrLn $ "Installing cabal config at " ++ cabalConfig

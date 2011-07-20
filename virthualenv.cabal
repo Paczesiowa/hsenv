@@ -45,12 +45,6 @@ Build-type:          Simple
 -- Constraint on the version of Cabal needed to build this package.
 Cabal-version:       >=1.2
 
-Data-Files:
-  cabal_config
-  cabal
-  activate
-
-
 Executable virthualenv
   -- .hs or .lhs file containing the Main module.
   Main-is: virthualenv.hs
@@ -67,6 +61,7 @@ Executable virthualenv
                , bytestring >= 0.9.1.7 && < 0.10
                , bzlib >= 0.5.0.1 && < 0.6
                , tar >= 0.3.1.0 && < 0.4
+               , file-embed >= 0.0.4.1 && < 0.1
 
   -- Modules not exported by this package.
   -- Other-modules:
