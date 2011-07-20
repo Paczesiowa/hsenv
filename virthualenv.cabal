@@ -49,6 +49,8 @@ Executable virthualenv
   -- .hs or .lhs file containing the Main module.
   Main-is: virthualenv.hs
 
+  hs-source-dirs: src
+
   ghc-options: -threaded -Wall
 
   -- Packages needed in order to build this package.
