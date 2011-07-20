@@ -315,6 +315,13 @@ installCabalWrapper = do
                ] cabalWrapperSkel cabalWrapper
   liftIO $ makeExecutable cabalWrapper
 
+externalGhcPkgDb :: MyMonad FilePath
+externalGhcPkgDb = do
+  (_, out, _) <- outsideGhcPkg ["list"]
+  let lineWithPath = head $ lines out
+      path         = init lineWithPath -- skip trailing colon
+  return path
+
 -- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
 installActivateScript :: MyMonad ()
 installActivateScript = do
@@ -322,9 +329,12 @@ installActivateScript = do
   activateSkel    <- liftIO $ getDataFileName "activate"
   dirStructure    <- vheDirStructure
   ghc <- asks ghcSource
-  let ghcPkgPath = case ghc of
-                     System    -> ghcPackagePath dirStructure
-                     Tarball _ -> ghcPackagePath dirStructure ++ ":"
+  ghcPkgPath <-
+      case ghc of
+        System    -> return $ ghcPackagePath dirStructure
+        Tarball _ -> do
+          externalGhcPkgDbPath <- externalGhcPkgDb
+          return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath
   let activateScript = virthualEnvBinDir dirStructure </> "activate"
   liftIO $ putStrLn $ "Installing activate script at " ++ activateScript
   liftIO $ sed [ ("<VIRTHUALENV_NAME>", virthualEnvName)
