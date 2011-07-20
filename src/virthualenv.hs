@@ -1,21 +1,15 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving
   #-}
-import System.Environment (getEnv, getProgName, getArgs, getEnvironment)
-import System.IO (stderr, hPutStrLn, hGetContents, hPutStr, hFlush, hClose)
-import Control.Concurrent (forkIO, putMVar, takeMVar, newEmptyMVar)
-import Control.Exception (evaluate)
-import System.IO.Error (isDoesNotExistError)
+import System.Environment (getProgName, getArgs, getEnvironment)
+import System.IO (stderr, hPutStrLn, hGetContents, hPutStr)
 import System.Exit (exitFailure, ExitCode(..))
 import System.Process (readProcess, runInteractiveProcess, waitForProcess, readProcessWithExitCode)
-import System.Directory (getCurrentDirectory, createDirectory, executable, getPermissions, setPermissions, removeDirectoryRecursive, setCurrentDirectory)
+import System.Directory (getCurrentDirectory, createDirectory, removeDirectoryRecursive, setCurrentDirectory)
 import System.FilePath ((</>), splitPath)
-import Data.List (isPrefixOf, intercalate)
+import Data.List (isPrefixOf)
 import Control.Monad
-import Data.Char (isSpace)
-import Distribution.Compat.ReadP
 import Distribution.Package
 import Distribution.Version
-import Distribution.Text
 import Data.Maybe(catMaybes)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
@@ -25,6 +19,9 @@ import Codec.Compression.BZip
 import qualified Data.ByteString.Lazy as BS
 
 import Skeletons
+import Util.IO (getEnvVar, makeExecutable, readProcessWithExitCodeInEnv)
+import Util.Cabal (prettyVersion, prettyPkgInfo, parsePkgInfo, parseVersion)
+import Util.Template (substs)
 
 data GhcSource = System
                | Tarball FilePath
@@ -82,11 +79,6 @@ data DirStructure = DirStructure { virthualEnv       :: FilePath
                                  , ghcDir            :: FilePath
                                  , ghcBinDir         :: FilePath
                                  }
-
-getEnvVar :: String -> IO (Maybe String)
-getEnvVar var = Just `fmap` getEnv var `catch` noValueHandler
-    where noValueHandler e | isDoesNotExistError e = return Nothing
-                           | otherwise             = ioError e
 
 -- check if any virtual env is already active
 checkVHE :: IO Bool
@@ -150,21 +142,13 @@ parseArgs args = do
                                }
     _ -> return Nothing
 
-prettyVersion :: Version -> String
-prettyVersion (Version [] _) = ""
-prettyVersion (Version numbers _) = intercalate "." $ map show numbers
-
-prettyPkgInfo :: PackageIdentifier -> String
-prettyPkgInfo (PackageIdentifier (PackageName name) (Version [] _)) = name
-prettyPkgInfo (PackageIdentifier (PackageName name) version) =
-  name ++ "-" ++ prettyVersion version
-
 getDeps :: PackageIdentifier -> MyMonad [PackageIdentifier]
 getDeps pkgInfo = do
   debug $ "Extracting dependencies of " ++ prettyPkgInfo pkgInfo
   (_, x, _) <- outsideGhcPkg ["field", prettyPkgInfo pkgInfo, "depends"]
   let depStrings = tail $ words x
-  mapM parsePackageName depStrings
+      deps = catMaybes $ map parsePkgInfo depStrings
+  return deps
 
 -- transplant a package from simple name (e.g. base)
 -- tries to guess the version
@@ -178,7 +162,7 @@ transplantPackage package = do
     -- version: 1.1.4
     -- version: 1.2.0.3
     let versionStrings = map (!!1) $ map words $ lines out
-        versions = catMaybes $ map (\s -> parseCheck parse s "version") versionStrings
+        versions = catMaybes $ map parseVersion versionStrings
     debugBlock $ debug $ "Found: " ++ unwords (map prettyVersion versions)
     let version = maximum versions
     debugBlock $ debug $ "Using version: " ++ prettyVersion version
@@ -221,18 +205,6 @@ transplantPkg pkgInfo = do
       mapM_ transplantPkg deps
       movePackage pkgInfo
 
-parseCheck :: Monad m => ReadP a a -> String -> String -> m a
-parseCheck parser str what =
-  case [ x | (x,ys) <- readP_to_S parser str, all isSpace ys ] of
-    [x] -> return x
-    _ -> error ("cannot parse \'" ++ str ++ "\' as a " ++ what)
-
-parsePackageName :: Monad m => String -> m PackageIdentifier
-parsePackageName str | "builtin_" `isPrefixOf` str =
-                         let name = drop (length "builtin_") str
-                         in return $ PackageIdentifier (PackageName name) $ Version [] []
-                     | otherwise = parseCheck parse str "package identifier"
-
 -- copy single package that already has all deps satisfied
 movePackage :: PackageIdentifier -> MyMonad ()
 movePackage pkgInfo = do
@@ -241,21 +213,6 @@ movePackage pkgInfo = do
   (_, out, _) <- outsideGhcPkg ["describe", package]
   _ <- insideGhcPkg ["register", "-"] (Just out)
   return ()
-
-subst :: (String, String) -> String -> String
-subst _ [] = []
-subst (from, to) input@(x:xs) | from `isPrefixOf` input = to ++ subst (from, to) (drop (length from) input)
-                              | otherwise = x:subst (from, to) xs
-
-sed :: [(String, String)] -> String -> FilePath -> IO ()
-sed substs input outFile = do
-  let out = foldr subst input substs
-  writeFile outFile out
-
-makeExecutable :: FilePath -> IO ()
-makeExecutable f = do
-  p <- getPermissions f
-  setPermissions f (p {executable = True})
 
 cabalUpdate :: MyMonad ()
 cabalUpdate = do
@@ -309,8 +266,9 @@ installCabalWrapper = do
                              , " at "
                              , cabalWrapper
                              ]
-  liftIO $ sed [ ("<CABAL_CONFIG>", cabalConfig)
-               ] cabalWrapperSkel cabalWrapper
+  let cabalWrapperContents = substs [ ("<CABAL_CONFIG>", cabalConfig)
+                                    ] cabalWrapperSkel
+  liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
 
 externalGhcPkgDb :: MyMonad FilePath
@@ -334,22 +292,24 @@ installActivateScript = do
           return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath
   let activateScript = virthualEnvBinDir dirStructure </> "activate"
   liftIO $ putStrLn $ "Installing activate script at " ++ activateScript
-  liftIO $ sed [ ("<VIRTHUALENV_NAME>", virthualEnvName)
-               , ("<VIRTHUALENV>", virthualEnv dirStructure)
-               , ("<GHC_PACKAGE_PATH>", ghcPkgPath)
-               , ("<VIRTHUALENV_BIN_DIR>", virthualEnvBinDir dirStructure)
-               , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
-               , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
-               ] activateSkel activateScript
+  let activateScriptContents = substs [ ("<VIRTHUALENV_NAME>", virthualEnvName)
+                                      , ("<VIRTHUALENV>", virthualEnv dirStructure)
+                                      , ("<GHC_PACKAGE_PATH>", ghcPkgPath)
+                                      , ("<VIRTHUALENV_BIN_DIR>", virthualEnvBinDir dirStructure)
+                                      , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
+                                      , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
+                                      ] activateSkel
+  liftIO $ writeFile activateScript activateScriptContents
 
 installCabalConfig :: MyMonad ()
 installCabalConfig = do
   cabalConfig     <- cabalConfigLocation
   dirStructure    <- vheDirStructure
   liftIO $ putStrLn $ "Installing cabal config at " ++ cabalConfig
-  liftIO $ sed [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
-               , ("<CABAL_DIR>", cabalDir dirStructure)
-               ] cabalConfigSkel cabalConfig
+  let cabalConfigContents = substs [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
+                                   , ("<CABAL_DIR>", cabalDir dirStructure)
+                                   ] cabalConfigSkel
+  liftIO $ writeFile cabalConfig cabalConfigContents
 
 createDirStructure :: MyMonad ()
 createDirStructure = do
@@ -371,7 +331,7 @@ initGhcDb = do
   liftIO $ putStrLn $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
   (_, out, _) <- outsideGhcPkg ["--version"]
   let versionString      = last $ words out
-      Just version       = parseCheck parse versionString "version"
+      Just version       = parseVersion versionString
       ghc_6_12_1_version = Version [6,12,1] []
   if version < ghc_6_12_1_version then do
       debugBlock $ debug "Detected GHC older than 6.12, initializing GHC_PACKAGE_PATH to file with '[]'"
@@ -434,28 +394,6 @@ outsideGhcPkg args = do
                  System    -> "ghc-pkg"
                  Tarball _ -> ghcDir dirStructure </> "bin" </> "ghc-pkg"
   liftIO $ readProcessWithExitCode ghcPkg args ""
-
-type Environment = [(String, String)]
-
-readProcessWithExitCodeInEnv :: Environment -> FilePath -> [String] -> Maybe String -> IO (ExitCode, String, String)
-readProcessWithExitCodeInEnv env progName args input = do
-  (inh, outh, errh, pid) <- runInteractiveProcess progName args Nothing (Just env)
-  out <- hGetContents outh
-  outMVar <- newEmptyMVar
-  _ <- forkIO $ evaluate (length out) >> putMVar outMVar ()
-  err <- hGetContents errh
-  errMVar <- newEmptyMVar
-  _ <- forkIO $ evaluate (length err) >> putMVar errMVar ()
-  case input of
-    Just inp | not (null inp) -> hPutStr inh inp >> hFlush inh
-    _ -> return ()
-  hClose inh
-  takeMVar outMVar
-  hClose outh
-  takeMVar errMVar
-  hClose errh
-  ex <- waitForProcess pid
-  return (ex, out, err)
 
 insideGhcPkg :: [String] -> Maybe String -> MyMonad (ExitCode, String, String)
 insideGhcPkg args input = do
