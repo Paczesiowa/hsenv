@@ -1,5 +1,5 @@
 import System.Environment (getProgName, getArgs, getEnvironment)
-import System.IO (stderr, hPutStrLn, hGetContents, hPutStr)
+import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure, ExitCode(..))
 import System.Process (readProcess, runInteractiveProcess, waitForProcess, readProcessWithExitCode)
 import System.Directory (getCurrentDirectory, createDirectory, removeDirectoryRecursive, setCurrentDirectory)
@@ -21,19 +21,6 @@ import Util.Cabal (prettyVersion, prettyPkgInfo, parsePkgInfo, parseVersion)
 import Util.Template (substs)
 import Types
 import MyMonad
-
--- run a process in a Virtual Haskell Environment
--- returns process output and exit status
-envProcess :: String -> [String] -> Maybe String -> MyMonad (String, ExitCode)
-envProcess prog args input = do
-  env <- getVirtualEnvironment
-  (inh, out, _, pid) <- liftIO $ runInteractiveProcess prog args Nothing (Just env)
-  case input of
-    Nothing  -> return ()
-    Just inp -> liftIO $ hPutStr inh inp
-  result   <- liftIO $ hGetContents out
-  exitCode <- liftIO $ waitForProcess pid
-  return (result, exitCode)
 
 -- check if any virtual env is already active
 checkVHE :: IO Bool
@@ -332,13 +319,6 @@ main = do
                     case result of
                       Left err -> hPutStrLn stderr $ getExceptionMessage err
                       Right ()  -> return ()
-
-externalGhcVersion :: MyMonad Bool
-externalGhcVersion = do
-  ghc <- asks ghcSource
-  case ghc of
-    System    -> return False
-    Tarball _ -> return True
 
 installGhc :: MyMonad ()
 installGhc = do
