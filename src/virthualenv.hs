@@ -1,7 +1,7 @@
 import System.Environment (getProgName, getArgs, getEnvironment)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure, ExitCode(..))
-import System.Process (readProcess, runInteractiveProcess, waitForProcess, readProcessWithExitCode)
+import System.Process (readProcess, runInteractiveProcess, waitForProcess)
 import System.Directory (getCurrentDirectory, createDirectory, removeDirectoryRecursive, setCurrentDirectory)
 import System.FilePath ((</>), splitPath)
 import Data.List (isPrefixOf)
@@ -16,11 +16,13 @@ import Codec.Compression.BZip
 import qualified Data.ByteString.Lazy as BS
 
 import Skeletons
-import Util.IO (getEnvVar, makeExecutable, readProcessWithExitCodeInEnv)
+import Util.IO (getEnvVar, makeExecutable)
 import Util.Cabal (prettyVersion, prettyPkgInfo, parsePkgInfo, parseVersion)
 import Util.Template (substs)
 import Types
 import MyMonad
+import Process
+import Paths
 
 -- check if any virtual env is already active
 checkVHE :: IO Bool
@@ -114,15 +116,6 @@ transplantPackage package = do
     let pkgInfo = PackageIdentifier (PackageName package) version
     transplantPkg pkgInfo
 
--- returns environment dictionary used in Virtual Haskell Environment
--- it's inherited from the current process, but variable
--- GHC_PACKAGE_PATH is altered.
-getVirtualEnvironment :: MyMonad [(String, String)]
-getVirtualEnvironment = do
-  env <- liftIO getEnvironment
-  dirStructure <- vheDirStructure
-  return $ ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,_) -> k /= "GHC_PACKAGE_PATH") env
-
 -- check if this package is already installed in Virtual Haskell Environment
 checkIfInstalled :: PackageIdentifier -> MyMonad Bool
 checkIfInstalled pkgInfo = do
@@ -174,32 +167,6 @@ cabalUpdate = do
   _ <- liftIO $ waitForProcess pid
   return ()
 
--- returns record containing paths to all important directories
--- inside virtual environment dir structure
-vheDirStructure :: MyMonad DirStructure
-vheDirStructure = do
-  cwd <- liftIO getCurrentDirectory
-  let virthualEnvLocation    = cwd
-      virthualEnvDirLocation = virthualEnvLocation </> ".virthualenv"
-      cabalDirLocation       = virthualEnvDirLocation </> "cabal"
-      ghcDirLocation         = virthualEnvDirLocation </> "ghc"
-  return DirStructure { virthualEnv       = virthualEnvLocation
-                      , virthualEnvDir    = virthualEnvDirLocation
-                      , ghcPackagePath    = virthualEnvDirLocation </> "ghc_pkg_db"
-                      , cabalDir          = cabalDirLocation
-                      , cabalBinDir       = cabalDirLocation </> "bin"
-                      , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
-                      , tmpDir            = virthualEnvLocation </> "tmp"
-                      , ghcDir            = ghcDirLocation
-                      , ghcBinDir         = ghcDirLocation </> "bin"
-                      }
-
--- returns location of cabal's config file inside virtual environment dir structure
-cabalConfigLocation :: MyMonad FilePath
-cabalConfigLocation = do
-  dirStructure <- vheDirStructure
-  return $ cabalDir dirStructure </> "config"
-
 -- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
 installCabalWrapper :: MyMonad ()
 installCabalWrapper = do
@@ -215,13 +182,6 @@ installCabalWrapper = do
                                     ] cabalWrapperSkel
   liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
-
-externalGhcPkgDb :: MyMonad FilePath
-externalGhcPkgDb = do
-  (_, out, _) <- outsideGhcPkg ["list"]
-  let lineWithPath = head $ lines out
-      path         = init lineWithPath -- skip trailing colon
-  return path
 
 -- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
 installActivateScript :: MyMonad ()
@@ -327,25 +287,6 @@ installGhc = do
   case ghc of
     System              -> indentMessages $ debug "Using system version of GHC - nothing to install."
     Tarball tarballPath -> indentMessages $ installExternalGhc tarballPath
-
-outsideGhcPkg :: [String] -> MyMonad (ExitCode, String, String)
-outsideGhcPkg args = do
-  ghc <- asks ghcSource
-  dirStructure <- vheDirStructure
-  let ghcPkg = case ghc of
-                 System    -> "ghc-pkg"
-                 Tarball _ -> ghcDir dirStructure </> "bin" </> "ghc-pkg"
-  liftIO $ readProcessWithExitCode ghcPkg args ""
-
-insideGhcPkg :: [String] -> Maybe String -> MyMonad (ExitCode, String, String)
-insideGhcPkg args input = do
-  ghc <- asks ghcSource
-  dirStructure <- vheDirStructure
-  env <- getVirtualEnvironment
-  let ghcPkg = case ghc of
-                 System    -> "ghc-pkg"
-                 Tarball _ -> ghcDir dirStructure </> "bin" </> "ghc-pkg"
-  liftIO $ readProcessWithExitCodeInEnv env ghcPkg args input
 
 installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
