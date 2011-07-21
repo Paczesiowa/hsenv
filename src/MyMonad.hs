@@ -13,6 +13,7 @@ import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
 import Control.Monad.Error (ErrorT, MonadError, runErrorT)
+import Control.Monad (when)
 
 import Prelude hiding (log)
 
@@ -32,11 +33,9 @@ indentMessages m = do
 log :: Verbosity -> String -> MyMonad ()
 log minLevel str = do
   flag <- asks verbosity
-  if flag >= minLevel then do
-      depth <- gets logDepth
-      liftIO $ putStrLn $ replicate (fromInteger depth) ' ' ++ str
-    else
-      return ()
+  when (flag >= minLevel) $ do
+    depth <- gets logDepth
+    liftIO $ putStrLn $ replicate (fromInteger depth) ' ' ++ str
 
 debug :: String -> MyMonad ()
 debug = log Verbose
