@@ -12,7 +12,9 @@ import Types
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
-import Control.Monad.Error (ErrorT, MonadError, runErrorT)  
+import Control.Monad.Error (ErrorT, MonadError, runErrorT)
+
+import Prelude hiding (log)
 
 newtype MyMonad a = MyMonad (StateT MyState (ReaderT Options (ErrorT MyException IO)) a)
     deriving (Monad, MonadReader Options, MonadIO, MonadState MyState, MonadError MyException)
@@ -27,17 +29,20 @@ indentMessages m = do
   modify (\s -> s{logDepth = logDepth s - 2})
   return result
 
-debug :: String -> MyMonad ()
-debug s = do
-  flag <- asks verbose
-  if flag then do
+log :: Verbosity -> String -> MyMonad ()
+log minLevel str = do
+  flag <- asks verbosity
+  if flag >= minLevel then do
       depth <- gets logDepth
-      liftIO $ putStrLn $ replicate (fromInteger depth) ' ' ++ s
-   else
+      liftIO $ putStrLn $ replicate (fromInteger depth) ' ' ++ str
+    else
       return ()
 
+debug :: String -> MyMonad ()
+debug = log Verbose
+
 info :: String -> MyMonad ()
-info = debug
+info = log Quiet
 
 trace :: String -> MyMonad ()
-trace = debug
+trace = log VeryVerbose

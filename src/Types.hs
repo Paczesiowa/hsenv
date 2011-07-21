@@ -4,6 +4,7 @@ module Types ( GhcSource(..)
              , MyState(..)
              , DirStructure(..)
              , MyException(..)
+             , Verbosity(..)
              ) where
 
 import Control.Monad.Error (Error)
@@ -11,7 +12,12 @@ import Control.Monad.Error (Error)
 data GhcSource = System           -- Use System's copy of GHC
                | Tarball FilePath -- Use GHC from tarball
 
-data Options = Options { verbose   :: Bool
+data Verbosity = Quiet
+               | Verbose
+               | VeryVerbose
+    deriving (Eq, Ord)
+
+data Options = Options { verbosity :: Verbosity
                        , vheName   :: String -- Virtual Haskell Environment name
                        , ghcSource :: GhcSource
                        }

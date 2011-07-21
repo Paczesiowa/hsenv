@@ -75,8 +75,11 @@ usage = do
 
 parseArgs :: [String] -> IO (Maybe Options)
 parseArgs args = do
-  let (verbosityFlags, nonVerbosityFlags) = span (== "--verbose") args
-      verbosity = not $ null verbosityFlags
+  let (verbosityFlags, nonVerbosityFlags) = span (`elem` ["--verbose", "--very-verbose"]) args
+      verboseness = case verbosityFlags of
+                      "--verbose":_      -> Verbose
+                      "--very-verbose":_ -> VeryVerbose
+                      _                  -> Quiet
       (nameFlags, nonNameFlags) = span ("--name=" `isPrefixOf`) nonVerbosityFlags
   name <- case nameFlags of
            nameFlag:_ -> return $ drop (length "--name=") nameFlag
@@ -84,14 +87,14 @@ parseArgs args = do
              cwd <- liftIO getCurrentDirectory
              let dirs = splitPath cwd
                  name = last dirs
-             when verbosity $ putStrLn $ "Using current directory name as Virtual Haskell Environment name: " ++ name
+             when (verboseness > Quiet) $ putStrLn $ "Using current directory name as Virtual Haskell Environment name: " ++ name
              return name
   let (ghcSourceFlags, restOfFlags) = span ("--ghc=" `isPrefixOf`) nonNameFlags
       ghc = case ghcSourceFlags of
               []     -> System
               path:_ -> Tarball $ drop (length "--ghc=") path
   case restOfFlags of
-    [] -> return $ Just Options { verbose   = verbosity
+    [] -> return $ Just Options { verbosity = verboseness
                                , vheName   = name
                                , ghcSource = ghc
                                }
