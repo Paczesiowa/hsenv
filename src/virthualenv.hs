@@ -22,17 +22,7 @@ import Skeletons
 import Util.IO (getEnvVar, makeExecutable, readProcessWithExitCodeInEnv)
 import Util.Cabal (prettyVersion, prettyPkgInfo, parsePkgInfo, parseVersion)
 import Util.Template (substs)
-
-data GhcSource = System
-               | Tarball FilePath
-
-data Options = Options { verbose   :: Bool
-                       , vheName   :: String
-                       , ghcSource :: GhcSource
-                       }
-
-data MyState = MyState { logDepth :: Integer
-                       }
+import Types
 
 newtype MyMonad a = MyMonad { unMyMonad :: StateT MyState (ReaderT Options IO) a }
     deriving (Monad, MonadReader Options, MonadIO, MonadState MyState)
@@ -68,17 +58,6 @@ envProcess prog args input = do
   result   <- liftIO $ hGetContents out
   exitCode <- liftIO $ waitForProcess pid
   return (result, exitCode)
-
-data DirStructure = DirStructure { virthualEnv       :: FilePath
-                                 , virthualEnvDir    :: FilePath
-                                 , ghcPackagePath    :: FilePath
-                                 , cabalDir          :: FilePath
-                                 , cabalBinDir       :: FilePath
-                                 , virthualEnvBinDir :: FilePath
-                                 , tmpDir            :: FilePath
-                                 , ghcDir            :: FilePath
-                                 , ghcBinDir         :: FilePath
-                                 }
 
 -- check if any virtual env is already active
 checkVHE :: IO Bool
