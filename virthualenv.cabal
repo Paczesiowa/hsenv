@@ -16,7 +16,7 @@ Synopsis:            Virtual Haskell Environment builder
 -- Description:
 
 -- URL for the project homepage or repository.
-Homepage:            http://www.patchtag.com/r/Paczesiowa/virthualenv/home
+Homepage:            https://github.com/Paczesiowa/virthualenv
 
 -- The license under which the package is released.
 License:             BSD3
