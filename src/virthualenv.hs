@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving
-  #-}
 import System.Environment (getProgName, getArgs, getEnvironment)
 import System.IO (stderr, hPutStrLn, hGetContents, hPutStr)
 import System.Exit (exitFailure, ExitCode(..))
@@ -12,8 +10,7 @@ import Distribution.Package
 import Distribution.Version
 import Data.Maybe(catMaybes)
 import Control.Monad.Trans (MonadIO, liftIO)
-import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
-import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
+import Control.Monad.Reader (asks)
 import qualified Codec.Archive.Tar as Tar
 import Codec.Compression.BZip
 import qualified Data.ByteString.Lazy as BS
@@ -23,28 +20,7 @@ import Util.IO (getEnvVar, makeExecutable, readProcessWithExitCodeInEnv)
 import Util.Cabal (prettyVersion, prettyPkgInfo, parsePkgInfo, parseVersion)
 import Util.Template (substs)
 import Types
-
-newtype MyMonad a = MyMonad { unMyMonad :: StateT MyState (ReaderT Options IO) a }
-    deriving (Monad, MonadReader Options, MonadIO, MonadState MyState)
-
-runMyMonad :: MyMonad a -> Options -> IO a
-runMyMonad m = runReaderT (evalStateT (unMyMonad m) (MyState 0))
-
-debugBlock :: MyMonad a -> MyMonad a
-debugBlock m = do
-  modify (\s -> s{logDepth = logDepth s + 2})
-  result <- m
-  modify (\s -> s{logDepth = logDepth s - 2})
-  return result
-
-debug :: String -> MyMonad ()
-debug s = do
-  flag <- asks verbose
-  if flag then do
-      depth <- gets logDepth
-      liftIO $ putStrLn $ replicate (fromInteger depth) ' ' ++ s
-   else
-      return ()
+import MyMonad
 
 -- run a process in a Virtual Haskell Environment
 -- returns process output and exit status
@@ -134,17 +110,17 @@ getDeps pkgInfo = do
 transplantPackage :: String -> MyMonad ()
 transplantPackage package = do
   debug $ "Copying package " ++ package ++ " to Virtual Haskell Environment."
-  debugBlock $ do
+  indentMessages $ do
     debug $ "Choosing package with highest version number."
-    (_, out, _) <- debugBlock $ outsideGhcPkg ["field", package, "version"]
+    (_, out, _) <- indentMessages $ outsideGhcPkg ["field", package, "version"]
     -- example output:
     -- version: 1.1.4
     -- version: 1.2.0.3
     let versionStrings = map (!!1) $ map words $ lines out
         versions = catMaybes $ map parseVersion versionStrings
-    debugBlock $ debug $ "Found: " ++ unwords (map prettyVersion versions)
+    indentMessages $ debug $ "Found: " ++ unwords (map prettyVersion versions)
     let version = maximum versions
-    debugBlock $ debug $ "Using version: " ++ prettyVersion version
+    indentMessages $ debug $ "Using version: " ++ prettyVersion version
     let pkgInfo = PackageIdentifier (PackageName package) version
     transplantPkg pkgInfo
 
@@ -162,8 +138,8 @@ checkIfInstalled :: PackageIdentifier -> MyMonad Bool
 checkIfInstalled pkgInfo = do
   let package = prettyPkgInfo pkgInfo
   debug $ "Checking if " ++ package ++ " is already installed."
-  (exitCode, _, _) <- debugBlock $ insideGhcPkg ["describe", package] Nothing
-  debugBlock $ case exitCode of
+  (exitCode, _, _) <- indentMessages $ insideGhcPkg ["describe", package] Nothing
+  indentMessages $ case exitCode of
                  ExitSuccess -> do
                    debug "It is."
                    return True
@@ -174,7 +150,7 @@ checkIfInstalled pkgInfo = do
 transplantPkg :: PackageIdentifier -> MyMonad ()
 transplantPkg pkgInfo = do
   debug $ "Copying package " ++ prettyPkgInfo pkgInfo ++ " to Virtual Haskell Environment."
-  debugBlock $ do
+  indentMessages $ do
     flag <- checkIfInstalled pkgInfo
     if flag then
         return ()
@@ -294,7 +270,7 @@ createDirStructure :: MyMonad ()
 createDirStructure = do
   dirStructure <- vheDirStructure
   liftIO $ putStrLn "Creating Virtual Haskell directory structure"
-  debugBlock $ do
+  indentMessages $ do
     debug $ "virthualenv directory: " ++ virthualEnvDir dirStructure
     liftIO $ createDirectory $ virthualEnvDir dirStructure
     debug $ "cabal directory: " ++ cabalDir dirStructure
@@ -313,7 +289,7 @@ initGhcDb = do
       Just version       = parseVersion versionString
       ghc_6_12_1_version = Version [6,12,1] []
   if version < ghc_6_12_1_version then do
-      debugBlock $ debug "Detected GHC older than 6.12, initializing GHC_PACKAGE_PATH to file with '[]'"
+      indentMessages $ debug "Detected GHC older than 6.12, initializing GHC_PACKAGE_PATH to file with '[]'"
       liftIO $ writeFile (ghcPackagePath dirStructure) "[]"
    else do
       _ <- outsideGhcPkg ["init", ghcPackagePath dirStructure]
@@ -322,7 +298,7 @@ initGhcDb = do
 copyBaseSystem :: MyMonad ()
 copyBaseSystem = do
   liftIO $ putStrLn "Copying necessary packages from original GHC package database"
-  debugBlock $ do
+  indentMessages $ do
     ghc <- asks ghcSource
     case ghc of
       System -> do
@@ -348,7 +324,11 @@ main = do
                 opts <- parseArgs args
                 case opts of
                   Nothing      -> usage >> exitFailure
-                  Just options -> runMyMonad realMain options
+                  Just options -> do
+                    result <- runMyMonad realMain options
+                    case result of
+                      Left err -> hPutStrLn stderr $ getExceptionMessage err
+                      Right ()  -> return ()
 
 externalGhcVersion :: MyMonad Bool
 externalGhcVersion = do
@@ -362,8 +342,8 @@ installGhc = do
   debug "Installing GHC"
   ghc          <- asks ghcSource
   case ghc of
-    System              -> debugBlock $ debug "Using system version of GHC - nothing to install."
-    Tarball tarballPath -> debugBlock $ installExternalGhc tarballPath
+    System              -> indentMessages $ debug "Using system version of GHC - nothing to install."
+    Tarball tarballPath -> indentMessages $ installExternalGhc tarballPath
 
 outsideGhcPkg :: [String] -> MyMonad (ExitCode, String, String)
 outsideGhcPkg args = do

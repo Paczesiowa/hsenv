@@ -1,8 +1,12 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Types ( GhcSource(..)
              , Options(..)
              , MyState(..)
              , DirStructure(..)
+             , MyException(..)
              ) where
+
+import Control.Monad.Error (Error)
 
 data GhcSource = System           -- Use System's copy of GHC
                | Tarball FilePath -- Use GHC from tarball
@@ -14,6 +18,9 @@ data Options = Options { verbose   :: Bool
 
 data MyState = MyState { logDepth :: Integer -- used for indentation of logging messages
                        }
+
+newtype MyException = MyException { getExceptionMessage :: String }
+    deriving Error
 
 -- Only absolute paths!
 data DirStructure = DirStructure { virthualEnv       :: FilePath -- dir containing .virthualenv dir (usually dir with cabal project)
