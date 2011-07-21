@@ -15,7 +15,7 @@ import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
 import Control.Monad.Error (ErrorT, MonadError, runErrorT)  
 
 newtype MyMonad a = MyMonad (StateT MyState (ReaderT Options (ErrorT MyException IO)) a)
-    deriving (Monad, MonadReader Options, MonadIO, MonadState MyState)
+    deriving (Monad, MonadReader Options, MonadIO, MonadState MyState, MonadError MyException)
 
 runMyMonad :: MyMonad a -> Options -> IO (Either MyException a)
 runMyMonad (MyMonad m) = runErrorT . runReaderT (evalStateT m (MyState 0))
