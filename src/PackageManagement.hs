@@ -4,7 +4,8 @@ module PackageManagement ( transplantPackage
 
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
 import System.Exit (ExitCode(..))
-import Data.Maybe (catMaybes)
+import Data.Maybe (mapMaybe)
+import Control.Monad (unless)
 
 import MyMonad
 import Process (outsideGhcPkg, insideGhcPkg)
@@ -15,7 +16,7 @@ getDeps pkgInfo = do
   debug $ "Extracting dependencies of " ++ prettyPkgInfo pkgInfo
   (_, x, _) <- outsideGhcPkg ["field", prettyPkgInfo pkgInfo, "depends"]
   let depStrings = tail $ words x
-      deps = catMaybes $ map parsePkgInfo depStrings
+      deps = mapMaybe parsePkgInfo depStrings
   return deps
 
 -- transplant a package from simple name (e.g. base)
@@ -24,13 +25,13 @@ transplantPackage :: String -> MyMonad ()
 transplantPackage package = do
   debug $ "Copying package " ++ package ++ " to Virtual Haskell Environment."
   indentMessages $ do
-    debug $ "Choosing package with highest version number."
+    debug "Choosing package with highest version number."
     (_, out, _) <- indentMessages $ outsideGhcPkg ["field", package, "version"]
     -- example output:
     -- version: 1.1.4
     -- version: 1.2.0.3
-    let versionStrings = map (!!1) $ map words $ lines out
-        versions = catMaybes $ map parseVersion versionStrings
+    let versionStrings = map (\line -> words line !! 1) $ lines out
+        versions = mapMaybe parseVersion versionStrings
     indentMessages $ debug $ "Found: " ++ unwords (map prettyVersion versions)
     let version = maximum versions
     indentMessages $ debug $ "Using version: " ++ prettyVersion version
@@ -56,9 +57,7 @@ transplantPkg pkgInfo = do
   debug $ "Copying package " ++ prettyPkgInfo pkgInfo ++ " to Virtual Haskell Environment."
   indentMessages $ do
     flag <- checkIfInstalled pkgInfo
-    if flag then
-        return ()
-     else do
+    unless flag $ do
       deps <- getDeps pkgInfo
       debug $ "Found: " ++ unwords (map prettyPkgInfo deps)
       mapM_ transplantPkg deps
