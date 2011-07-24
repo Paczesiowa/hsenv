@@ -17,7 +17,7 @@ checkVHE = do
                            "warning: VIRTHUALENV environment variable is defined"
                         ++ ", but no VIRHTUALENV_NAME environment variable defined."
                        putStrLn $ "There is already active Virtual Haskell Environment (at " ++ path ++ ")."
-                Just name -> do
+                Just name ->
                     putStrLn $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
             return True
 
