@@ -37,9 +37,13 @@ main = do
                   sane <- sanityCheck
                   let _in = not
                   when (_in sane) exitFailure
-                result <- runMyMonad realMain options
+                (result, messageLog) <- runMyMonad realMain options
                 case result of
-                  Left err -> hPutStrLn stderr $ getExceptionMessage err
+                  Left err -> do
+                    hPutStrLn stderr $ getExceptionMessage err
+                    hPutStrLn stderr ""
+                    hPutStrLn stderr "log file contains detailed description of the process."
+                    writeFile "log" $ unlines $ messageLog
                   Right ()  -> return ()
 
 realMain :: MyMonad ()
