@@ -23,6 +23,7 @@ main = do
 
     args <- getArgs
     case args of
+      ["--version"] -> putStrLn "0.2"
       ["--help"] -> usage
       ["-h"]     -> usage
       _          ->

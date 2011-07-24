@@ -23,6 +23,7 @@ usage = do
     putStrLn ""
     putStrLn "Flags:"
     putStrLn "-h --help      Show this help message"
+    putStrLn "--version      Print version number"
     putStrLn "--verbose      Print some debugging info"
     putStrLn "--very-verbose Print some debugging info"
     putStrLn "--name=NAME    Use NAME for name of Virthual Haskell Environment"
