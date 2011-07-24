@@ -21,5 +21,8 @@ checkVHE = do
                     putStrLn $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
             return True
 
+-- check if everything is sane
 sanityCheck :: IO Bool
-sanityCheck = checkVHE
+sanityCheck = do
+  vheFlag <- checkVHE
+  return $ not vheFlag
