@@ -17,9 +17,10 @@ data Verbosity = Quiet
                | VeryVerbose
     deriving (Eq, Ord)
 
-data Options = Options { verbosity :: Verbosity
-                       , vheName   :: String -- Virtual Haskell Environment name
-                       , ghcSource :: GhcSource
+data Options = Options { verbosity       :: Verbosity
+                       , skipSanityCheck :: Bool
+                       , vheName         :: String -- Virtual Haskell Environment name
+                       , ghcSource       :: GhcSource
                        }
 
 data MyState = MyState { logDepth :: Integer -- used for indentation of logging messages

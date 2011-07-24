@@ -17,10 +17,6 @@ import Args (usage, parseArgs)
 
 main :: IO ()
 main = do
-    sane <- sanityCheck
-    let _in = not
-    when (_in sane) exitFailure
-
     args <- getArgs
     case args of
       ["--version"] -> putStrLn "0.2"
@@ -35,6 +31,12 @@ main = do
                 usage
                 exitFailure
               Right options -> do
+                if skipSanityCheck options then
+                  putStrLn "WARNING: sanity checks are disabled."
+                 else do
+                  sane <- sanityCheck
+                  let _in = not
+                  when (_in sane) exitFailure
                 result <- runMyMonad realMain options
                 case result of
                   Left err -> hPutStrLn stderr $ getExceptionMessage err

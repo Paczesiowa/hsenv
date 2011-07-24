@@ -22,14 +22,15 @@ usage = do
     putStrLn $ "usage: " ++ name ++ " [FLAGS]"
     putStrLn ""
     putStrLn "Flags:"
-    putStrLn "-h --help      Show this help message"
-    putStrLn "--version      Print version number"
-    putStrLn "--verbose      Print some debugging info"
-    putStrLn "--very-verbose Print some debugging info"
-    putStrLn "--name=NAME    Use NAME for name of Virthual Haskell Environment"
-    putStrLn "               (defaults to the name of the current directory)"
-    putStrLn "--ghc=FILE     Use GHC from provided tarball (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
-    putStrLn "               Without this flag virthualenv will use system's copy of GHC"
+    putStrLn "-h --help           Show this help message"
+    putStrLn "--version           Print version number"
+    putStrLn "--verbose           Print some debugging info"
+    putStrLn "--very-verbose      Print some debugging info"
+    putStrLn "--skip-sanity-check Skip all the sanity checks (use at your own risk)"
+    putStrLn "--name=NAME         Use NAME for name of Virthual Haskell Environment"
+    putStrLn "                    (defaults to the name of the current directory)"
+    putStrLn "--ghc=FILE          Use GHC from provided tarball (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
+    putStrLn "                    Without this flag virthualenv will use system's copy of GHC"
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the current directory."
     putStrLn "All files will be stored in the .virthualenv/ subdirectory."
@@ -135,7 +136,9 @@ realParseArgs = do
   let ghc = case ghcFlag of
               Nothing   -> System
               Just path -> Tarball path
+  skipSanityCheckFlag <- isSingleValueSet "skip-sanity-check"
   return Options{ verbosity = verboseness
+                , skipSanityCheck = skipSanityCheckFlag
                 , vheName   = name
                 , ghcSource = ghc
                 }
