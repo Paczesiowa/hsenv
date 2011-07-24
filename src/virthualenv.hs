@@ -25,15 +25,19 @@ main = do
     case args of
       ["--help"] -> usage
       ["-h"]     -> usage
-      _          -> do
-                opts <- parseArgs args
-                case opts of
-                  Nothing      -> usage >> exitFailure
-                  Just options -> do
-                    result <- runMyMonad realMain options
-                    case result of
-                      Left err -> hPutStrLn stderr $ getExceptionMessage err
-                      Right ()  -> return ()
+      _          ->
+          do
+            opts <- parseArgs args
+            case opts of
+              Left err -> do
+                hPutStrLn stderr err
+                usage
+                exitFailure
+              Right options -> do
+                result <- runMyMonad realMain options
+                case result of
+                  Left err -> hPutStrLn stderr $ getExceptionMessage err
+                  Right ()  -> return ()
 
 realMain :: MyMonad ()
 realMain = do
