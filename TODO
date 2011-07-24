@@ -1,4 +1,0 @@
-* cleanup virthualenv.cabal
-* cabal wrapper should find real cabal further down the PATH (to handle installing new cabal-install in the env)
-  it should check for cabal binary in every path element (but discard itself) ti handel situation where .virthualenv/bin
-  is not the first element on the PATH
