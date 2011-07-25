@@ -15,6 +15,9 @@ import Control.Monad.Reader (asks)
 import System.Process (readProcess, waitForProcess, runInteractiveProcess)
 import System.FilePath ((</>))
 import Distribution.Version (Version (..))
+import qualified Codec.Archive.Tar as Tar
+import Codec.Compression.BZip (decompress)
+import qualified Data.ByteString.Lazy as BS
 
 import MyMonad
 import Types
@@ -24,6 +27,7 @@ import Process
 import Util.Template (substs)
 import Util.Cabal (parseVersion)
 import Util.IO (makeExecutable)
+import Util.Tar (unpack, stripComponents)
 import Skeletons
 
 cabalUpdate :: MyMonad ()
@@ -150,7 +154,10 @@ installExternalGhc tarballPath = do
   let tmpGhcDir = tmpDir dirStructure </> "ghc"
   liftIO $ createDirectory tmpGhcDir
   debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
-  _ <- liftIO $ readProcess  "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] ""
+  tarBall <- liftIO $ BS.readFile tarballPath
+  let tar = decompress tarBall
+      tarContents = stripComponents 1 $ Tar.read tar
+  liftIO $ unpack tmpGhcDir tarContents
   let configureScript = tmpGhcDir </> "configure"
   debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
   cwd <- liftIO getCurrentDirectory

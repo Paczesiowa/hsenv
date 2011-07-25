@@ -4,9 +4,6 @@ import System.Exit (exitFailure)
 import System.Directory (removeDirectoryRecursive)
 import Control.Monad (when)
 import Control.Monad.Trans (MonadIO, liftIO)
-import qualified Codec.Archive.Tar as Tar
-import Codec.Compression.BZip
-import qualified Data.ByteString.Lazy as BS
 
 import Types
 import MyMonad
