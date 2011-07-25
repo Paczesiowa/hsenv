@@ -4,9 +4,7 @@ module Util.Tar ( unpack
 
 import Codec.Archive.Tar.Entry
 import Codec.Archive.Tar (Entries(..), mapEntries)
--- import qualified Codec.Archive.Tar as Tar
 import Codec.Archive.Tar.Check (checkSecurity)
--- import Codec.Compression.BZip (decompress)
 
 import qualified Data.ByteString.Lazy as BS
 import System.FilePath ((</>), splitPath, joinPath, hasTrailingPathSeparator)
@@ -65,14 +63,3 @@ stripComponents n = mapEntries aux
           in case toTarPath isDirectory $ joinPath $ drop n $ splitPath $ fromTarPath oldTarPath of
             Left err         -> Left err
             Right newTarPath -> Right entry{entryTarPath = newTarPath}
-
--- foo :: (Entry -> a) -> Entries -> [a]
--- foo _ (Fail _) = []
--- foo _ Done = []
--- foo f (Next e es) = f e:foo f es
-
--- bar = do
---   tarBall <- BS.readFile "/tmp/ghc-7.0.4-i386-unknown-linux.tar.bz2"
---   let tar = decompress tarBall
---       tarContents = Tar.read tar
---   return $ foo entryPath tarContents
