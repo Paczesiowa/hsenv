@@ -30,9 +30,9 @@ main = do
                   Left err -> do
                     hPutStrLn stderr $ getExceptionMessage err
                     hPutStrLn stderr ""
-                    hPutStrLn stderr "log file contains detailed description of the process."
+                    hPutStrLn stderr "virthualenv.log file contains detailed description of the process."
                     let errorLog = unlines $ messageLog ++ ["", getExceptionMessage err]
-                    writeFile "log" errorLog
+                    writeFile "virthualenv.log" errorLog
                     exitFailure
                   Right ()  -> return ()
 
