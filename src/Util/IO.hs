@@ -1,15 +1,16 @@
 module Util.IO ( getEnvVar
                , makeExecutable
                , readProcessWithExitCodeInEnv
+               , createTemporaryDirectory
                ) where
 
 import System.Environment (getEnv)
 import System.IO.Error (isDoesNotExistError)
-import System.Directory (getPermissions, setPermissions, executable)
+import System.Directory (getPermissions, setPermissions, executable, removeFile, createDirectory)
 import Control.Concurrent (forkIO, putMVar, takeMVar, newEmptyMVar)
 import Control.Exception (evaluate)
 import System.Process (runInteractiveProcess, waitForProcess)
-import System.IO (hGetContents, hPutStr, hFlush, hClose)
+import System.IO (hGetContents, hPutStr, hFlush, hClose, openTempFile)
 import System.Exit (ExitCode)
 
 -- Computation getEnvVar var returns Just the value of the environment variable var,
@@ -46,3 +47,13 @@ readProcessWithExitCodeInEnv env progName args input = do
   hClose errh
   ex <- waitForProcess pid
   return (ex, out, err)
+
+-- similar to openTempFile, but creates a temporary directory
+-- and returns its path
+createTemporaryDirectory :: FilePath -> String -> IO FilePath
+createTemporaryDirectory parentDir templateName = do
+  (path, handle) <- openTempFile parentDir templateName
+  hClose handle
+  removeFile path
+  createDirectory path
+  return path
