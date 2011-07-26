@@ -103,8 +103,6 @@ Executable virthualenv
                , Cabal >= 1.8.0.6 && < 1.11
                , mtl >= 1.1.0.2 && < 2.1
                , bytestring >= 0.9.1.7 && < 0.10
-               , bzlib >= 0.5.0.1 && < 0.6
-               , tar >= 0.3.1.0 && < 0.4
                , file-embed >= 0.0.4.1 && < 0.1
 
 Source-repository head
