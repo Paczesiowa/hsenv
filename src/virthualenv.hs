@@ -31,7 +31,9 @@ main = do
                     hPutStrLn stderr $ getExceptionMessage err
                     hPutStrLn stderr ""
                     hPutStrLn stderr "log file contains detailed description of the process."
-                    writeFile "log" $ unlines messageLog
+                    let errorLog = unlines $ messageLog ++ ["", getExceptionMessage err]
+                    writeFile "log" errorLog
+                    exitFailure
                   Right ()  -> return ()
 
 realMain :: MyMonad ()
