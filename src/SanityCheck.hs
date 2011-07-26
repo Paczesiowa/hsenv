@@ -1,28 +1,29 @@
 module SanityCheck (sanityCheck) where
 
+import Control.Monad.Trans (liftIO)
+import Control.Monad.Error (throwError)
+
 import Util.IO (getEnvVar)
-import System.IO (stderr, hPutStrLn)
+import Types
+import MyMonad
 
 -- check if any virtual env is already active
-checkVHE :: IO Bool
+checkVHE :: MyMonad ()
 checkVHE = do
-    virthualEnvVar <- getEnvVar "VIRTHUALENV"
+    virthualEnvVar <- liftIO $ getEnvVar "VIRTHUALENV"
     case virthualEnvVar of
-        Nothing   -> return False
+        Nothing   -> return ()
         Just path -> do
-            virthualEnvName <- getEnvVar "VIRTHUALENV_NAME"
+            virthualEnvName <- liftIO $ getEnvVar "VIRTHUALENV_NAME"
             case virthualEnvName of
                 Nothing -> do
-                       hPutStrLn stderr $
-                           "warning: VIRTHUALENV environment variable is defined"
-                        ++ ", but no VIRHTUALENV_NAME environment variable defined."
-                       putStrLn $ "There is already active Virtual Haskell Environment (at " ++ path ++ ")."
+                       debug $ "warning: VIRTHUALENV environment variable is defined" ++ ", but no VIRHTUALENV_NAME environment variable defined."
+                       throwError $ MyException $ "There is already active Virtual Haskell Environment (at " ++ path ++ ")."
                 Just name ->
-                    putStrLn $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
-            return True
+                    throwError $ MyException $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
 
 -- check if everything is sane
-sanityCheck :: IO Bool
+sanityCheck :: MyMonad ()
 sanityCheck = do
-  vheFlag <- checkVHE
-  return $ not vheFlag
+  checkVHE
+  return ()
