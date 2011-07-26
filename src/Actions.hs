@@ -8,7 +8,7 @@ module Actions ( cabalUpdate
                , createDirStructure
                ) where
 
-import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory)
+import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive)
 import System.Environment (getEnvironment)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Reader (asks)
@@ -23,7 +23,7 @@ import PackageManagement
 import Process
 import Util.Template (substs)
 import Util.Cabal (parseVersion)
-import Util.IO (makeExecutable)
+import Util.IO (makeExecutable, createTemporaryDirectory)
 import Skeletons
 
 cabalUpdate :: MyMonad ()
@@ -101,8 +101,6 @@ createDirStructure = do
     liftIO $ createDirectory $ cabalDir dirStructure
     debug $ "virthualenv bin directory: " ++ virthualEnvBinDir dirStructure
     liftIO $ createDirectory $ virthualEnvBinDir dirStructure
-    debug $ "tmp directory: " ++ tmpDir dirStructure
-    liftIO $ createDirectory $ tmpDir dirStructure
 
 initGhcDb :: MyMonad ()
 initGhcDb = do
@@ -147,8 +145,7 @@ installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
   liftIO $ putStrLn $ "Installing GHC from " ++ tarballPath
   dirStructure <- vheDirStructure
-  let tmpGhcDir = tmpDir dirStructure </> "ghc"
-  liftIO $ createDirectory tmpGhcDir
+  tmpGhcDir <- liftIO $ createTemporaryDirectory (virthualEnv dirStructure) "ghc"
   debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
   _ <- liftIO $ readProcess  "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] ""
   let configureScript = tmpGhcDir </> "configure"
@@ -159,4 +156,5 @@ installExternalGhc tarballPath = do
   debug "Installing GHC"
   _ <- liftIO $ readProcess "make" ["install"] ""
   liftIO $ setCurrentDirectory cwd
+  liftIO $ removeDirectoryRecursive tmpGhcDir
   return ()

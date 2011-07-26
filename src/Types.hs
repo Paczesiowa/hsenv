@@ -36,7 +36,6 @@ data DirStructure = DirStructure { virthualEnv       :: FilePath -- dir containi
                                  , cabalDir          :: FilePath -- directory with private cabal dir
                                  , cabalBinDir       :: FilePath -- cabal's bin/ dir (used in $PATH)
                                  , virthualEnvBinDir :: FilePath -- dir with haskell tools wrappers and activate script
-                                 , tmpDir            :: FilePath -- tmp dir, deleted on exit
                                  , ghcDir            :: FilePath -- directory with private copy of external GHC (only used when using GHC from tarball)
                                  , ghcBinDir         :: FilePath -- ghc's bin/ dir (with ghc[i|-pkg]) (only used when using GHC from tarball)
                                  }

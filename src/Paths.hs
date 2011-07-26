@@ -26,7 +26,6 @@ vheDirStructure = do
                       , cabalDir          = cabalDirLocation
                       , cabalBinDir       = cabalDirLocation </> "bin"
                       , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
-                      , tmpDir            = virthualEnvLocation </> "tmp"
                       , ghcDir            = ghcDirLocation
                       , ghcBinDir         = ghcDirLocation </> "bin"
                       }

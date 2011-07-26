@@ -1,13 +1,10 @@
 import System.Environment (getArgs)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure)
-import System.Directory (removeDirectoryRecursive)
 import Control.Monad (when)
-import Control.Monad.Trans (MonadIO, liftIO)
 
 import Types
 import MyMonad
-import Paths
 import Actions
 import SanityCheck (sanityCheck)
 import Args (usage, parseArgs)
@@ -53,5 +50,3 @@ realMain = do
   installActivateScript
   installCabalWrapper
   cabalUpdate
-  dirStructure <- vheDirStructure
-  liftIO $ removeDirectoryRecursive $ tmpDir dirStructure
