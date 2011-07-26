@@ -37,7 +37,7 @@ main = do
                     hPutStrLn stderr $ getExceptionMessage err
                     hPutStrLn stderr ""
                     hPutStrLn stderr "log file contains detailed description of the process."
-                    writeFile "log" $ unlines $ messageLog
+                    writeFile "log" $ unlines messageLog
                   Right ()  -> return ()
 
 realMain :: MyMonad ()

@@ -37,7 +37,7 @@ log minLevel str = do
   let text = replicate (fromInteger depth) ' ' ++ str
   tell [text]
   flag <- asks verbosity
-  when (flag >= minLevel) $ do
+  when (flag >= minLevel) $
     liftIO $ putStrLn text
 
 debug :: String -> MyMonad ()
