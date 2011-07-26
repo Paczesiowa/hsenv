@@ -104,6 +104,7 @@ Executable virthualenv
                , mtl >= 1.1.0.2 && < 2.1
                , bytestring >= 0.9.1.7 && < 0.10
                , file-embed >= 0.0.4.1 && < 0.1
+               , split >= 0.1.4 && < 0.2
 
 Source-repository head
   Type:     git

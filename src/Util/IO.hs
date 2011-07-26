@@ -2,16 +2,20 @@ module Util.IO ( getEnvVar
                , makeExecutable
                , readProcessWithExitCodeInEnv
                , createTemporaryDirectory
+               , which
                ) where
 
 import System.Environment (getEnv)
 import System.IO.Error (isDoesNotExistError)
-import System.Directory (getPermissions, setPermissions, executable, removeFile, createDirectory)
+import System.Directory (getPermissions, setPermissions, executable, removeFile, createDirectory, doesFileExist)
 import Control.Concurrent (forkIO, putMVar, takeMVar, newEmptyMVar)
 import Control.Exception (evaluate)
 import System.Process (runInteractiveProcess, waitForProcess)
 import System.IO (hGetContents, hPutStr, hFlush, hClose, openTempFile)
 import System.Exit (ExitCode)
+import Data.List.Split (splitOn)
+import Control.Monad (foldM)
+import System.FilePath ((</>))
 
 -- Computation getEnvVar var returns Just the value of the environment variable var,
 -- or Nothing if the environment variable does not exist
@@ -57,3 +61,20 @@ createTemporaryDirectory parentDir templateName = do
   removeFile path
   createDirectory path
   return path
+
+which :: String -> IO (Maybe FilePath)
+which name = do
+  path <- getEnvVar "PATH"
+  case path of
+    Nothing    -> return Nothing
+    Just path' -> do
+      let pathElems = splitOn ":" path'
+          aux x@(Just _) _ = return x
+          aux Nothing pathDir = do
+            let programPath = pathDir </> name
+            flag <- doesFileExist programPath
+            if flag then
+                return $ Just programPath
+             else
+                return Nothing
+      foldM aux Nothing pathElems
