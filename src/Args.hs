@@ -6,6 +6,7 @@ module Args ( usage
 import System.Directory (getCurrentDirectory)
 import Data.List (isPrefixOf, isInfixOf)
 import Data.Char (isAlphaNum)
+import Data.Maybe (fromMaybe)
 import Control.Monad (when)
 import Data.Monoid (Monoid(..))
 import System.Environment (getProgName)
@@ -140,9 +141,7 @@ realParseArgs = do
               Just path -> Tarball path
   skipSanityCheckFlag <- isSingleValueSet "skip-sanity-check"
   makeCmdFlag <- getSingleLongValueArg "make-cmd"
-  let make = case makeCmdFlag of
-              Nothing  -> "make"
-              Just cmd -> cmd
+  let make = fromMaybe "make" makeCmdFlag
   return Options{ verbosity = verboseness
                 , skipSanityCheck = skipSanityCheckFlag
                 , vheName   = name
