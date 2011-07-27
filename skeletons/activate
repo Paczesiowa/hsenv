@@ -32,7 +32,6 @@ deactivate() {
 
     unset -v VIRTHUALENV
     unset -v VIRTHUALENV_NAME
-    unset -v VIRTHUALENV_ENV_BACKUP
     unset -v GHC_PACKAGE_PATH
     unset -f deactivate
 
