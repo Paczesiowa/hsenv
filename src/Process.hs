@@ -7,13 +7,46 @@ import Types
 import MyMonad
 import Paths
 
-import Util.IO (readProcessWithExitCodeInEnv)
+import Util.IO (readProcessWithExitCodeInEnv, Environment)
 
 import Control.Monad.Reader (asks)
 import Control.Monad.Trans (liftIO)
+import Control.Monad.Error (throwError)
+import Control.Monad (forM_)
+import Data.Maybe (fromMaybe)
 import System.FilePath ((</>))
 import System.Process (readProcessWithExitCode)
-import System.Exit (ExitCode)
+import System.Exit (ExitCode(..))
+
+runProcess :: Maybe Environment -> FilePath -> [String] -> Maybe String -> MyMonad String
+runProcess env prog args input = do
+  debug $ unwords $ ["Executing:", prog] ++ args
+  indentMessages $ case env of
+    Nothing   -> trace "using inherited variable environment"
+    Just env' -> do
+      trace "using following environment:"
+      indentMessages $ forM_ env' $ \(var,val) -> trace $ var ++ ": " ++ val
+  indentMessages $ case input of
+    Nothing  -> return ()
+    Just inp -> do
+      trace "using the following input:"
+      indentMessages $ forM_ (lines inp) trace
+  let execProcess = case env of
+                      Nothing   -> readProcessWithExitCode prog args (fromMaybe "" input)
+                      Just env' -> readProcessWithExitCodeInEnv env' prog args input
+  (exitCode, output, errors) <- liftIO execProcess
+  indentMessages $ debug $ case exitCode of
+    ExitSuccess         -> "Process exited successfully"
+    ExitFailure errCode -> "Process failed with exit code " ++ show errCode
+  indentMessages $ do
+    trace "Process output:"
+    indentMessages $ forM_ (lines output) trace
+  indentMessages $ do
+    trace "Process error output:"
+    indentMessages $ forM_ (lines errors) trace
+  case exitCode of
+    ExitSuccess         -> return output
+    ExitFailure errCode -> throwError $ MyException $ prog ++ " process failed with status " ++ show errCode
 
 -- run outside ghc-pkg tool (uses system's or from ghc installed from tarball)
 outsideGhcPkg :: [String] -> MyMonad (ExitCode, String, String)

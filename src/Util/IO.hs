@@ -1,6 +1,7 @@
 module Util.IO ( getEnvVar
                , makeExecutable
                , readProcessWithExitCodeInEnv
+               , Environment
                , createTemporaryDirectory
                , which
                ) where
