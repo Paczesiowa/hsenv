@@ -49,31 +49,46 @@ runProcess env prog args input = do
     ExitFailure errCode -> throwError $ MyException $ prog ++ " process failed with status " ++ show errCode
 
 -- run outside ghc-pkg tool (uses system's or from ghc installed from tarball)
-outsideGhcPkg :: [String] -> MyMonad (ExitCode, String, String)
+outsideGhcPkg :: [String] -> MyMonad String
 outsideGhcPkg args = do
   ghc <- asks ghcSource
   dirStructure <- vheDirStructure
-  let ghcPkg = case ghc of
-                 System    -> "ghc-pkg"
-                 Tarball _ -> ghcDir dirStructure </> "bin" </> "ghc-pkg"
-  liftIO $ readProcessWithExitCode ghcPkg args ""
+  ghcPkg <- case ghc of
+    System    -> do
+      debug "Running system's version of ghc-pkg"
+      return "ghc-pkg"
+    Tarball _ -> do
+      debug "Running ghc-pkg installed from GHC's tarball"
+      return $ ghcDir dirStructure </> "bin" </> "ghc-pkg"
+  indentMessages $ runProcess Nothing ghcPkg args Nothing
 
 -- returns path to GHC (installed from tarball) builtin package database
 externalGhcPkgDb :: MyMonad FilePath
 externalGhcPkgDb = do
-  (_, out, _) <- outsideGhcPkg ["list"]
-  let lineWithPath = head $ lines out
-      path         = init lineWithPath -- skip trailing colon
-  return path
+  debug "Checking where GHC (installed from tarball) keeps its package database"
+  out <- indentMessages $ outsideGhcPkg ["list"]
+  indentMessages $ debug "Trying to parse ghc-pkg's output"
+  case lines out of
+    []             -> throwError $ MyException "ghc-pkg returned empty output"
+    lineWithPath:_ ->
+      case lineWithPath of
+        "" -> throwError $ MyException "ghc-pkg's first line of output is empty"
+        _  -> do
+          indentMessages $ debug $ "Found: " ++ lineWithPath
+          return lineWithPath
 
 -- run ghc-pkg tool (uses system's or from ghc installed from tarball)
 -- from the inside of Virtual Haskell Environment
-insideGhcPkg :: [String] -> Maybe String -> MyMonad (ExitCode, String, String)
+insideGhcPkg :: [String] -> Maybe String -> MyMonad String
 insideGhcPkg args input = do
   ghc <- asks ghcSource
   dirStructure <- vheDirStructure
   env <- getVirtualEnvironment
-  let ghcPkg = case ghc of
-                 System    -> "ghc-pkg"
-                 Tarball _ -> ghcDir dirStructure </> "bin" </> "ghc-pkg"
-  liftIO $ readProcessWithExitCodeInEnv env ghcPkg args input
+  ghcPkg <- case ghc of
+    System    -> do
+      debug "Running system's version of ghc-pkg inside virtual environment"
+      return "ghc-pkg"
+    Tarball _ -> do
+      debug "Running ghc-pkg, installed from GHC's tarball, inside virtual environment"
+      return $ ghcDir dirStructure </> "bin" </> "ghc-pkg"
+  indentMessages $ runProcess (Just env) ghcPkg args input
