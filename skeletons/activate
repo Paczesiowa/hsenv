@@ -18,20 +18,17 @@ echo "Use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haske
 echo ""
 echo "To exit from this virtual environment, enter command 'deactivate'."
 
-export VIRTHUALENV_ENV_BACKUP="PATH PS1"
-
-for var in ${VIRTHUALENV_ENV_BACKUP}; do
-    eval export "VIRTHUALENV_${var}_BACKUP"="\${${var}}"
-done
+export "VIRTHUALENV_PATH_BACKUP"="${PATH}"
+export "VIRTHUALENV_PS1_BACKUP"="${PS1}"
 
 deactivate() {
     echo "Deactivating ${VIRTHUALENV_NAME} Virtual Haskell Environment (at ${VIRTHUALENV})."
     echo "Restoring previous environment settings."
 
-    for var in ${VIRTHUALENV_ENV_BACKUP}; do
-        eval export "${var}"="\${VIRTHUALENV_${var}_BACKUP}"
-        unset -v "VIRTHUALENV_${var}_BACKUP"
-    done
+    export "PATH"="${VIRTHUALENV_PATH_BACKUP}"
+    unset -v "VIRTHUALENV_PATH_BACKUP"
+    export "PS1"="${VIRTHUALENV_PS1_BACKUP}"
+    unset -v "VIRTHUALENV_PS1_BACKUP"
 
     unset -v VIRTHUALENV
     unset -v VIRTHUALENV_NAME
