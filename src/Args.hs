@@ -31,6 +31,8 @@ usage = do
     putStrLn "                    (defaults to the name of the current directory)"
     putStrLn "--ghc=FILE          Use GHC from provided tarball (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
     putStrLn "                    Without this flag virthualenv will use system's copy of GHC"
+    putStrLn "--make-cmd=NAME     Used as make substitute for installing GHC from tarball (e.g. gmake),"
+    putStrLn "                    defaults to 'make'"
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the current directory."
     putStrLn "All files will be stored in the .virthualenv/ subdirectory."
@@ -137,10 +139,15 @@ realParseArgs = do
               Nothing   -> System
               Just path -> Tarball path
   skipSanityCheckFlag <- isSingleValueSet "skip-sanity-check"
+  makeCmdFlag <- getSingleLongValueArg "make-cmd"
+  let make = case makeCmdFlag of
+              Nothing  -> "make"
+              Just cmd -> cmd
   return Options{ verbosity = verboseness
                 , skipSanityCheck = skipSanityCheckFlag
                 , vheName   = name
                 , ghcSource = ghc
+                , makeCmd   = make
                 }
 
 parseArgs :: [String] -> IO (Either String Options)

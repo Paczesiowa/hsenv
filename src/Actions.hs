@@ -154,7 +154,8 @@ installExternalGhc tarballPath = do
   liftIO $ setCurrentDirectory tmpGhcDir
   _ <- liftIO $ readProcess configureScript ["--prefix=" ++ ghcDir dirStructure] ""
   debug "Installing GHC"
-  _ <- liftIO $ readProcess "make" ["install"] ""
+  make <- asks makeCmd
+  _ <- liftIO $ readProcess make ["install"] ""
   liftIO $ setCurrentDirectory cwd
   liftIO $ removeDirectoryRecursive tmpGhcDir
   return ()

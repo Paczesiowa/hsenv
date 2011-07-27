@@ -21,6 +21,7 @@ data Options = Options { verbosity       :: Verbosity
                        , skipSanityCheck :: Bool
                        , vheName         :: String -- Virtual Haskell Environment name
                        , ghcSource       :: GhcSource
+                       , makeCmd         :: String -- make substitute used for 'make install' of external GHC
                        }
 
 data MyState = MyState { logDepth :: Integer -- used for indentation of logging messages
