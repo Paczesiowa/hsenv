@@ -2,20 +2,24 @@
 
 PATH_ELEMS="$(echo ${PATH} | sed 's/:/\n/g')"
 
-OUTER_PATH=""
-i=0
+ORIG_CABAL_BINARY=""
 
 for PATH_ELEM in ${PATH_ELEMS}; do
-    if [ "${i}" ">" "0" ]; then
-        if [ "${i}" ">" "1" ]; then
-            OUTER_PATH="${OUTER_PATH}:"
+    CABAL_CANDIDATE="${PATH_ELEM}/cabal"
+    if command -v "${CABAL_CANDIDATE}" > /dev/null 2> /dev/null; then
+        if [ "${0}" != "${CABAL_CANDIDATE}" ]; then
+            if [ -z "${ORIG_CABAL_BINARY}" ]; then
+                ORIG_CABAL_BINARY="${CABAL_CANDIDATE}"
+            fi
         fi
-        OUTER_PATH="${OUTER_PATH}${PATH_ELEM}"
     fi
-    i=$(( ${i} + 1 ))
 done
 
-ORIG_CABAL_BINARY="$(PATH=${OUTER_PATH} which cabal)"
+if [ -z "${ORIG_CABAL_BINARY}" ]; then
+    echo "cabal wrapper: Couldn't find real cabal program"
+    exit 1
+fi
+
 CABAL_CONFIG="<CABAL_CONFIG>"
 
 exec "${ORIG_CABAL_BINARY}" --config-file="${CABAL_CONFIG}" "${@}"
