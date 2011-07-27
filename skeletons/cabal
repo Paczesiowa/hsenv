@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PATH_ELEMS="$(echo ${PATH} | sed 's/:/\n/g')"
+PATH_ELEMS="$(echo ${PATH} | tr -s ':' '\n')"
 
 ORIG_CABAL_BINARY=""
 
