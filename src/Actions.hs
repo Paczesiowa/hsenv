@@ -15,6 +15,7 @@ import Control.Monad.Reader (asks)
 import System.Process (readProcess, waitForProcess, runInteractiveProcess)
 import System.FilePath ((</>))
 import Distribution.Version (Version (..))
+import Distribution.Package (PackageName(..))
 
 import MyMonad
 import Types
@@ -124,12 +125,12 @@ copyBaseSystem = do
     ghc <- asks ghcSource
     case ghc of
       System -> do
-        transplantPackage "base"
-        transplantPackage "Cabal"
-        transplantPackage "haskell98"
-        transplantPackage "haskell2010"
-        transplantPackage "ghc"
-        transplantPackage "ghc-binary"
+        transplantPackage $ PackageName "base"
+        transplantPackage $ PackageName "Cabal"
+        transplantPackage $ PackageName "haskell98"
+        transplantPackage $ PackageName "haskell2010"
+        transplantPackage $ PackageName "ghc"
+        transplantPackage $ PackageName "ghc-binary"
       Tarball _ ->
         debug "Using external GHC - nothing to copy, Virtual environment will reuse GHC package database"
 
