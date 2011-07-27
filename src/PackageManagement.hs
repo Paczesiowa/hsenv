@@ -1,9 +1,9 @@
 module PackageManagement (Transplantable(..)) where
 
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
-import System.Exit (ExitCode(..))
 import Data.Maybe (mapMaybe)
 import Control.Monad (unless)
+import Control.Monad.Error (catchError)
 
 import MyMonad
 import Process (outsideGhcPkg, insideGhcPkg)
@@ -12,7 +12,7 @@ import Util.Cabal (prettyPkgInfo, prettyVersion, parseVersion, parsePkgInfo)
 getDeps :: PackageIdentifier -> MyMonad [PackageIdentifier]
 getDeps pkgInfo = do
   debug $ "Extracting dependencies of " ++ prettyPkgInfo pkgInfo
-  (_, x, _) <- outsideGhcPkg ["field", prettyPkgInfo pkgInfo, "depends"]
+  x <- outsideGhcPkg ["field", prettyPkgInfo pkgInfo, "depends"]
   let depStrings = tail $ words x
       deps = mapMaybe parsePkgInfo depStrings
   return deps
@@ -28,7 +28,7 @@ instance Transplantable PackageName where
       debug $ "Copying package " ++ packageName ++ " to Virtual Haskell Environment."
       indentMessages $ do
         debug "Choosing package with highest version number."
-        (_, out, _) <- indentMessages $ outsideGhcPkg ["field", packageName, "version"]
+        out <- indentMessages $ outsideGhcPkg ["field", packageName, "version"]
         -- example output:
         -- version: 1.1.4
         -- version: 1.2.0.3
@@ -45,14 +45,13 @@ checkIfInstalled :: PackageIdentifier -> MyMonad Bool
 checkIfInstalled pkgInfo = do
   let package = prettyPkgInfo pkgInfo
   debug $ "Checking if " ++ package ++ " is already installed."
-  (exitCode, _, _) <- indentMessages $ insideGhcPkg ["describe", package] Nothing
-  indentMessages $ case exitCode of
-                 ExitSuccess -> do
-                   debug "It is."
-                   return True
-                 ExitFailure _ -> do
-                   debug "It's not."
-                   return False
+  (do
+    _ <- indentMessages $ insideGhcPkg ["describe", package] Nothing
+    indentMessages $ debug "It is."
+    return True) `catchError` handler
+   where handler _ = do
+           debug "It's not."
+           return False
 
 instance Transplantable PackageIdentifier where
     transplantPackage pkgInfo = do
@@ -70,6 +69,6 @@ movePackage :: PackageIdentifier -> MyMonad ()
 movePackage pkgInfo = do
   let package = prettyPkgInfo pkgInfo
   debug $ "Moving package " ++ prettyPkgInfo pkgInfo ++ " to Virtual Haskell Environment."
-  (_, out, _) <- outsideGhcPkg ["describe", package]
+  out <- outsideGhcPkg ["describe", package]
   _ <- insideGhcPkg ["register", "-"] (Just out)
   return ()

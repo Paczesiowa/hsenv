@@ -107,7 +107,7 @@ initGhcDb :: MyMonad ()
 initGhcDb = do
   dirStructure <- vheDirStructure
   liftIO $ putStrLn $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
-  (_, out, _) <- outsideGhcPkg ["--version"]
+  out <- outsideGhcPkg ["--version"]
   let versionString      = last $ words out
       Just version       = parseVersion versionString
       ghc_6_12_1_version = Version [6,12,1] []
