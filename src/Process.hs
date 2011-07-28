@@ -1,6 +1,7 @@
 module Process ( externalGhcPkgDb
                , outsideGhcPkg
                , insideGhcPkg
+               , runProcess
                ) where
 
 import Types
