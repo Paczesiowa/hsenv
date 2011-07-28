@@ -1,4 +1,7 @@
-module PackageManagement (Transplantable(..)) where
+module PackageManagement ( Transplantable(..)
+                         , parseVersion
+                         , parsePkgInfo
+                         ) where
 
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
 import Distribution.Version (Version(..))
@@ -8,7 +11,18 @@ import Control.Monad (unless)
 import Types
 import MyMonad
 import Process (outsideGhcPkg, insideGhcPkg)
-import Util.Cabal (prettyPkgInfo, prettyVersion, parseVersion, parsePkgInfo)
+import Util.Cabal (prettyPkgInfo, prettyVersion)
+import qualified Util.Cabal (parseVersion, parsePkgInfo)
+
+parseVersion :: String -> MyMonad Version
+parseVersion s = case Util.Cabal.parseVersion s of
+                    Nothing      -> throwError $ MyException $ "Couldn't parse " ++ s ++ " as a package version"
+                    Just version -> return version
+
+parsePkgInfo :: String -> MyMonad PackageIdentifier
+parsePkgInfo s = case Util.Cabal.parsePkgInfo s of
+                   Nothing      -> throwError $ MyException $ "Couldn't parse package identifier " ++ s
+                   Just pkgInfo -> return pkgInfo
 
 getDeps :: PackageIdentifier -> MyMonad [PackageIdentifier]
 getDeps pkgInfo = do
@@ -22,11 +36,7 @@ getDeps pkgInfo = do
     []           -> throwError $ MyException $ "Couldn't parse ghc-pkg output to find dependencies of " ++ prettyPkg
     _:depStrings -> do -- skip 'depends:'
       indentMessages $ trace $ "Found dependency strings: " ++ unwords depStrings
-      let parsePkgInfo' :: String -> MyMonad PackageIdentifier
-          parsePkgInfo' x = maybe (throwError $ MyException $ "Couldn't parse package identifier " ++ x)
-                                  return
-                                  (parsePkgInfo x)
-      mapM parsePkgInfo' depStrings
+      mapM parsePkgInfo depStrings
 
 -- things that can be copied from system's GHC pkg database
 -- to GHC pkg database inside virtual environment
@@ -49,11 +59,7 @@ instance Transplantable PackageName where
                                           _   -> throwError $ MyException $ "Couldn't extract version string from: " ++ line
         versionStrings <- mapM extractVersionString $ lines out
         indentMessages $ trace $ "Found version strings: " ++ unwords versionStrings
-        let parseVersion' :: String -> MyMonad Version
-            parseVersion' s = maybe (throwError $ MyException $ "Couldn't parse " ++ s ++ " as a package version")
-                                    return
-                                    (parseVersion s)
-        versions <- mapM parseVersion' versionStrings
+        versions <- mapM parseVersion versionStrings
         case versions of
           []     -> throwError $ MyException $ "No versions of package " ++ packageName ++ " found"
           (v:vs) -> do
