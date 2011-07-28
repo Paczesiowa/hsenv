@@ -53,7 +53,7 @@ installCabalWrapper = do
   liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
 
--- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
+-- install activate script (in bin/ directory) inside virtual environment dir structure
 installActivateScript :: MyMonad ()
 installActivateScript = do
   virthualEnvName <- asks vheName
@@ -78,6 +78,7 @@ installActivateScript = do
     mapM_ trace $ lines activateScriptContents
   liftIO $ writeFile activateScript activateScriptContents
 
+-- install cabal's config file (in cabal/ directory) inside virtual environment dir structure
 installCabalConfig :: MyMonad ()
 installCabalConfig = do
   cabalConfig     <- cabalConfigLocation
@@ -100,6 +101,7 @@ createDirStructure = do
     debug $ "virthualenv bin directory: " ++ virthualEnvBinDir dirStructure
     liftIO $ createDirectory $ virthualEnvBinDir dirStructure
 
+-- initialize private GHC package database inside virtual environment
 initGhcDb :: MyMonad ()
 initGhcDb = do
   dirStructure <- vheDirStructure
@@ -118,12 +120,24 @@ initGhcDb = do
         _ <- indentMessages $ outsideGhcPkg ["init", ghcPackagePath dirStructure]
         return ()
 
+-- copy optional packages and don't fail completely if this copying fails
+-- some packages mail fail to copy and it's not fatal (e.g. older GHCs don't have haskell2010)
 transplantOptionalPackage :: String -> MyMonad ()
 transplantOptionalPackage name = transplantPackage (PackageName name) `catchError` handler
   where handler e = do
           warning $ "Failed to copy optional package " ++ name ++ " from system's GHC: "
           indentMessages $ warning $ getExceptionMessage e
 
+-- copy base system
+-- base - needed for ghci and everything else
+-- Cabal - needed to install non-trivial cabal packages with cabal-install
+-- haskell98 - some packages need it but they don't specify it (seems it's an implicit dependancy)
+-- haskell2010 - maybe it's similar to haskell98?
+-- ghc and ghc-binary - two packages that are provided with GHC and cannot be installed any other way
+-- also include dependant packages of all the above
+-- when using GHC from tarball, just reuse its package database
+-- cannot do the same when using system's GHC, because there might be additional packages installed
+-- then it wouldn't be possible to work on them insie virtual environment
 copyBaseSystem :: MyMonad ()
 copyBaseSystem = do
   info "Copying necessary packages from original GHC package database"
