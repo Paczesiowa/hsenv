@@ -5,6 +5,7 @@ module MyMonad ( MyMonad
                , debug
                , info
                , trace
+               , warning
                ) where
 
 import Types
@@ -15,6 +16,7 @@ import Control.Monad.Writer (WriterT, MonadWriter, runWriterT, tell)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
 import Control.Monad.Error (ErrorT, MonadError, runErrorT)
 import Control.Monad (when)
+import System.IO (stderr, hPutStrLn)
 
 import Prelude hiding (log)
 
@@ -31,11 +33,18 @@ indentMessages m = do
   modify (\s -> s{logDepth = logDepth s - 2})
   return result
 
-log :: Verbosity -> String -> MyMonad ()
-log minLevel str = do
+-- add message to private log and return adjusted message (with log depth)
+-- that can be printed somewhere else
+privateLog :: String -> MyMonad String
+privateLog str = do
   depth <- gets logDepth
   let text = replicate (fromInteger depth) ' ' ++ str
   tell [text]
+  return text
+
+log :: Verbosity -> String -> MyMonad ()
+log minLevel str = do
+  text <- privateLog str
   flag <- asks verbosity
   when (flag >= minLevel) $
     liftIO $ putStrLn text
@@ -48,3 +57,8 @@ info = log Quiet
 
 trace :: String -> MyMonad ()
 trace = log VeryVerbose
+
+warning :: String -> MyMonad ()
+warning str = do
+  text <- privateLog str
+  liftIO $ hPutStrLn stderr text
