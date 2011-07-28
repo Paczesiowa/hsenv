@@ -14,14 +14,21 @@ import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 import Control.Monad.Writer (WriterT, MonadWriter, runWriterT, tell)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
-import Control.Monad.Error (ErrorT, MonadError, runErrorT)
+import Control.Monad.Error (ErrorT, MonadError, runErrorT, throwError)
 import Control.Monad (when)
 import System.IO (stderr, hPutStrLn)
 
 import Prelude hiding (log)
 
 newtype MyMonad a = MyMonad (StateT MyState (ReaderT Options (ErrorT MyException (WriterT [String] IO))) a)
-    deriving (Monad, MonadReader Options, MonadIO, MonadState MyState, MonadError MyException, MonadWriter [String])
+    deriving (Monad, MonadReader Options, MonadState MyState, MonadError MyException, MonadWriter [String])
+
+instance MonadIO MyMonad where
+    liftIO m = MyMonad $ do
+                 x <- liftIO $ (Right `fmap` m) `catch` (return . Left)
+                 case x of
+                   Left e  -> throwError $ MyException $ "IO error: " ++ show e
+                   Right y -> return y
 
 runMyMonad :: MyMonad a -> Options -> IO (Either MyException a, [String])
 runMyMonad (MyMonad m) = runWriterT . runErrorT . runReaderT (evalStateT m (MyState 0))
