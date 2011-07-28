@@ -46,13 +46,14 @@ installCabalWrapper = do
   let cabalWrapperContents = substs [("<CABAL_CONFIG>", cabalConfig)] cabalWrapperSkel
   indentMessages $ do
     trace "cabal wrapper contents:"
-    mapM_ trace $ lines cabalWrapperContents
+    indentMessages $ mapM_ trace $ lines cabalWrapperContents
   liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
 
 -- install activate script (in bin/ directory) inside virtual environment dir structure
 installActivateScript :: MyMonad ()
 installActivateScript = do
+  info "Installing activate script"
   virthualEnvName <- asks vheName
   dirStructure    <- vheDirStructure
   ghc             <- asks ghcSource
@@ -62,7 +63,7 @@ installActivateScript = do
                    externalGhcPkgDbPath <- indentMessages externalGhcPkgDb
                    return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath
   let activateScript = virthualEnvBinDir dirStructure </> "activate"
-  info $ "Installing activate script at " ++ activateScript
+  indentMessages $ debug $ "using location: " ++ activateScript
   let activateScriptContents = substs [ ("<VIRTHUALENV_NAME>", virthualEnvName)
                                       , ("<VIRTHUALENV>", virthualEnv dirStructure)
                                       , ("<GHC_PACKAGE_PATH>", ghcPkgPath)
@@ -72,7 +73,7 @@ installActivateScript = do
                                       ] activateSkel
   indentMessages $ do
     trace "activate script contents:"
-    mapM_ trace $ lines activateScriptContents
+    indentMessages $ mapM_ trace $ lines activateScriptContents
   liftIO $ writeFile activateScript activateScriptContents
 
 -- install cabal's config file (in cabal/ directory) inside virtual environment dir structure
@@ -80,10 +81,13 @@ installCabalConfig :: MyMonad ()
 installCabalConfig = do
   cabalConfig     <- cabalConfigLocation
   dirStructure    <- vheDirStructure
-  liftIO $ putStrLn $ "Installing cabal config at " ++ cabalConfig
+  info $ "Installing cabal config at " ++ cabalConfig
   let cabalConfigContents = substs [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
                                    , ("<CABAL_DIR>", cabalDir dirStructure)
                                    ] cabalConfigSkel
+  indentMessages $ do
+    trace "cabal config contents:"
+    indentMessages $ mapM_ trace $ lines cabalConfigContents
   liftIO $ writeFile cabalConfig cabalConfigContents
 
 createDirStructure :: MyMonad ()
@@ -159,18 +163,19 @@ installGhc = do
 installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
   info $ "Installing GHC from " ++ tarballPath
-  dirStructure <- vheDirStructure
-  tmpGhcDir <- liftIO $ createTemporaryDirectory (virthualEnv dirStructure) "ghc"
-  indentMessages $ debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
-  _ <- indentMessages $ runProcess Nothing "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] Nothing
-  let configureScript = tmpGhcDir </> "configure"
-  indentMessages $ debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
-  cwd <- liftIO getCurrentDirectory
-  liftIO $ setCurrentDirectory tmpGhcDir
-  _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
-  make <- asks makeCmd
-  indentMessages $ debug $ "Installing GHC with " ++ make ++ " install"
-  _ <- runProcess Nothing make ["install"] Nothing
-  liftIO $ setCurrentDirectory cwd
-  liftIO $ removeDirectoryRecursive tmpGhcDir
-  return ()
+  indentMessages $ do
+    dirStructure <- vheDirStructure
+    tmpGhcDir <- liftIO $ createTemporaryDirectory (virthualEnv dirStructure) "ghc"
+    debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
+    _ <- indentMessages $ runProcess Nothing "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] Nothing
+    let configureScript = tmpGhcDir </> "configure"
+    debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
+    cwd <- liftIO getCurrentDirectory
+    liftIO $ setCurrentDirectory tmpGhcDir
+    _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
+    make <- asks makeCmd
+    debug $ "Installing GHC with " ++ make ++ " install"
+    _ <- indentMessages $ runProcess Nothing make ["install"] Nothing
+    liftIO $ setCurrentDirectory cwd
+    liftIO $ removeDirectoryRecursive tmpGhcDir
+    return ()
