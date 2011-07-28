@@ -11,7 +11,7 @@ module Actions ( cabalUpdate
 import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Reader (asks)
-import Control.Monad.Error (throwError)
+import Control.Monad.Error (throwError, catchError)
 import System.FilePath ((</>))
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
@@ -118,6 +118,12 @@ initGhcDb = do
         _ <- indentMessages $ outsideGhcPkg ["init", ghcPackagePath dirStructure]
         return ()
 
+transplantOptionalPackage :: String -> MyMonad ()
+transplantOptionalPackage name = transplantPackage (PackageName name) `catchError` handler
+  where handler e = do
+          warning $ "Failed to copy optional package " ++ name ++ " from system's GHC: "
+          indentMessages $ warning $ getExceptionMessage e
+
 copyBaseSystem :: MyMonad ()
 copyBaseSystem = do
   info "Copying necessary packages from original GHC package database"
@@ -127,10 +133,7 @@ copyBaseSystem = do
       System -> do
         transplantPackage $ PackageName "base"
         transplantPackage $ PackageName "Cabal"
-        transplantPackage $ PackageName "haskell98"
-        transplantPackage $ PackageName "haskell2010"
-        transplantPackage $ PackageName "ghc"
-        transplantPackage $ PackageName "ghc-binary"
+        mapM_ transplantOptionalPackage ["haskell98", "haskell2010", "ghc", "ghc-binary"]
       Tarball _ ->
         debug "Using external GHC - nothing to copy, Virtual environment will reuse GHC package database"
 
