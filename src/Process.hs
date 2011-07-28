@@ -72,8 +72,11 @@ externalGhcPkgDb = do
       case lineWithPath of
         "" -> throwError $ MyException "ghc-pkg's first line of output is empty"
         _  -> do
-          indentMessages $ debug $ "Found: " ++ lineWithPath
-          return lineWithPath
+          -- ghc-pkg ends pkg db path with trailing colon
+          -- but only when not run from the terminal
+          let path = init lineWithPath
+          indentMessages $ debug $ "Found: " ++ path
+          return path
 
 -- run ghc-pkg tool (uses system's or from ghc installed from tarball)
 -- from the inside of Virtual Haskell Environment
