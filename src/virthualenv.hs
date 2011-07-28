@@ -1,7 +1,6 @@
 import System.Environment (getArgs)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure)
-import Control.Monad.Reader (asks)
 
 import Types
 import MyMonad

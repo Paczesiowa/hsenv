@@ -4,7 +4,6 @@ module Paths ( vheDirStructure
              ) where
 
 import System.FilePath ((</>))
-import Control.Monad.Trans (liftIO)
 import System.Directory (getCurrentDirectory)
 import System.Environment (getEnvironment)
 

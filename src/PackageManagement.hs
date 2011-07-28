@@ -5,7 +5,6 @@ module PackageManagement ( Transplantable(..)
 
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
 import Distribution.Version (Version(..))
-import Control.Monad.Error (throwError, catchError)
 import Control.Monad (unless)
 
 import Types

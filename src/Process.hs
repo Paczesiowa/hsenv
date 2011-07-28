@@ -10,9 +10,6 @@ import Paths
 
 import Util.IO (readProcessWithExitCodeInEnv, Environment)
 
-import Control.Monad.Reader (asks)
-import Control.Monad.Trans (liftIO)
-import Control.Monad.Error (throwError)
 import Control.Monad (forM_)
 import Data.Maybe (fromMaybe)
 import System.FilePath ((</>))

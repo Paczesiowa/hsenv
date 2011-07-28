@@ -9,9 +9,6 @@ module Actions ( cabalUpdate
                ) where
 
 import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive)
-import Control.Monad.Trans (liftIO)
-import Control.Monad.Reader (asks)
-import Control.Monad.Error (throwError, catchError)
 import System.FilePath ((</>))
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))

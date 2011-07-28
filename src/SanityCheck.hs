@@ -1,10 +1,7 @@
 module SanityCheck (sanityCheck) where
 
-import Control.Monad.Trans (liftIO)
-import Control.Monad.Error (throwError)
 import Control.Monad (when)
 import System.Directory (doesDirectoryExist)
-import Control.Monad.Reader (asks)
 
 import Util.IO (getEnvVar, which)
 import Types

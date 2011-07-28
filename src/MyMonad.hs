@@ -6,6 +6,13 @@ module MyMonad ( MyMonad
                , info
                , trace
                , warning
+               , throwError
+               , catchError
+               , asks
+               , gets
+               , tell
+               , modify
+               , liftIO
                ) where
 
 import Types
@@ -14,7 +21,7 @@ import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 import Control.Monad.Writer (WriterT, MonadWriter, runWriterT, tell)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
-import Control.Monad.Error (ErrorT, MonadError, runErrorT, throwError)
+import Control.Monad.Error (ErrorT, MonadError, runErrorT, throwError, catchError)
 import Control.Monad (when)
 import System.IO (stderr, hPutStrLn)
 
