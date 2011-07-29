@@ -6,6 +6,7 @@ module MyMonad ( MyMonad
                , info
                , trace
                , warning
+               , finally
                , throwError
                , catchError
                , asks
@@ -28,7 +29,7 @@ import System.IO (stderr, hPutStrLn)
 import Prelude hiding (log)
 
 newtype MyMonad a = MyMonad (StateT MyState (ReaderT Options (ErrorT MyException (WriterT [String] IO))) a)
-    deriving (Monad, MonadReader Options, MonadState MyState, MonadError MyException, MonadWriter [String])
+    deriving (Functor, Monad, MonadReader Options, MonadState MyState, MonadError MyException, MonadWriter [String])
 
 instance MonadIO MyMonad where
     liftIO m = MyMonad $ do
@@ -39,6 +40,14 @@ instance MonadIO MyMonad where
 
 runMyMonad :: MyMonad a -> Options -> IO (Either MyException a, [String])
 runMyMonad (MyMonad m) = runWriterT . runErrorT . runReaderT (evalStateT m (MyState 0))
+
+finally :: MyMonad a -> MyMonad b -> MyMonad a
+finally m sequel = do
+  result <- (Right `fmap` m) `catchError` (return . Left)
+  _ <- sequel
+  case result of
+    Left e  -> throwError e
+    Right x -> return x
 
 indentMessages :: MyMonad a -> MyMonad a
 indentMessages m = do

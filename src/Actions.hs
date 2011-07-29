@@ -195,10 +195,12 @@ installExternalGhc tarballPath = do
     debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
     cwd <- liftIO getCurrentDirectory
     liftIO $ setCurrentDirectory tmpGhcDir
-    _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
     make <- asks makeCmd
-    debug $ "Installing GHC with " ++ make ++ " install"
-    _ <- indentMessages $ runProcess Nothing make ["install"] Nothing
-    liftIO $ setCurrentDirectory cwd
+    let configureAndInstall = do
+          _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
+          debug $ "Installing GHC with " ++ make ++ " install"
+          _ <- indentMessages $ runProcess Nothing make ["install"] Nothing
+          return ()
+    configureAndInstall `finally` liftIO (setCurrentDirectory cwd)
     liftIO $ removeDirectoryRecursive tmpGhcDir
     return ()
