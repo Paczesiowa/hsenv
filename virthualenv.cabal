@@ -86,7 +86,7 @@ Tested-with:         GHC == 6.12.3, GHC == 7.0.4
 
 Data-files:          virthualenv.el
 
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
 
 Executable virthualenv
 
