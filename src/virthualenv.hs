@@ -1,6 +1,7 @@
 import System.Environment (getArgs)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure)
+import System.FilePath ((</>))
 
 import Types
 import MyMonad
@@ -33,7 +34,7 @@ main = do
                     let errorLog = unlines $ messageLog ++ ["", getExceptionMessage err]
                     writeFile "virthualenv.log" errorLog
                     exitFailure
-                  Right ()  -> return ()
+                  Right ()  -> writeFile (".virthualenv" </> "virthualenv.log") $ unlines messageLog
 
 realMain :: MyMonad ()
 realMain = do
