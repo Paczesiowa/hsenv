@@ -84,7 +84,7 @@ Package-url:         http://hackage.haskell.org/package/virthualenv
 
 Tested-with:         GHC == 6.12.3, GHC == 7.0.4
 
-Extra-source-files:  README
+Data-files:          virthualenv.el
 
 Cabal-version:       >=1.2
 
