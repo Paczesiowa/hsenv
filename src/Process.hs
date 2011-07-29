@@ -2,6 +2,7 @@ module Process ( externalGhcPkgDb
                , outsideGhcPkg
                , insideGhcPkg
                , runProcess
+               , ghcPkgDbPathLocation
                ) where
 
 import Types
@@ -93,3 +94,15 @@ insideGhcPkg args input = do
       debug "Running ghc-pkg, installed from GHC's tarball, inside virtual environment"
       return $ ghcDir dirStructure </> "bin" </> "ghc-pkg"
   indentMessages $ runProcess (Just env) ghcPkg args input
+
+-- returns value of GHC_PACKAGE_PATH that should be used inside virtual environment
+ghcPkgDbPathLocation :: MyMonad String
+ghcPkgDbPathLocation = do
+  debug "Determining value of GHC_PACKAGE_PATH to be used inside virtual environment"
+  dirStructure <- vheDirStructure
+  ghc <- asks ghcSource
+  case ghc of
+    System    -> return $ ghcPackagePath dirStructure
+    Tarball _ -> do
+             externalGhcPkgDbPath <- indentMessages externalGhcPkgDb
+             return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath

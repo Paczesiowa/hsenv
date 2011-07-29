@@ -40,12 +40,11 @@ deactivate() {
     fi
 }
 
-if [ -e "<GHC_BIN_DIR>" ]; then
-    export PATH="<VIRTHUALENV_BIN_DIR>:<CABAL_BIN_DIR>:<GHC_BIN_DIR>:${PATH}"
-else
-    export PATH="<VIRTHUALENV_BIN_DIR>:<CABAL_BIN_DIR>:${PATH}"
-fi
-export GHC_PACKAGE_PATH="<GHC_PACKAGE_PATH>"
+PATH_PREPENDIX="$(cat <VIRTHUALENV_DIR>/path_var_prependix)"
+export PATH="${PATH_PREPENDIX}:${PATH}"
+unset -v PATH_PREPENDIX
+
+export GHC_PACKAGE_PATH="$(cat <VIRTHUALENV_DIR>/ghc_package_path_var)"
 export PS1="(${VIRTHUALENV_NAME})${PS1}"
 
 if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then

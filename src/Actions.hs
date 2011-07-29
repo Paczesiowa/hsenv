@@ -13,6 +13,7 @@ import System.FilePath ((</>))
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
 import Safe (lastMay)
+import Data.List (intercalate)
 
 import MyMonad
 import Types
@@ -50,23 +51,44 @@ installCabalWrapper = do
   liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
 
+installActivateScriptSupportFiles :: MyMonad ()
+installActivateScriptSupportFiles = do
+  debug "installing supporting files"
+  dirStructure <- vheDirStructure
+  ghc <- asks ghcSource
+  indentMessages $ do
+    let pathVarPrependixLocation = virthualEnvDir dirStructure </> "path_var_prependix"
+        pathVarElems =
+            case ghc of
+              System    -> [virthualEnvBinDir dirStructure, cabalBinDir dirStructure]
+              Tarball _ -> [ virthualEnvBinDir dirStructure
+                          , cabalBinDir dirStructure
+                          , ghcBinDir dirStructure
+                          ]
+        pathVarPrependix = intercalate ":" pathVarElems
+    debug $ "installing path_var_prependix file to " ++ pathVarPrependixLocation
+    indentMessages $ trace $ "path_var_prependix contents: " ++ pathVarPrependix
+    liftIO $ writeFile pathVarPrependixLocation pathVarPrependix
+    ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
+    let ghcPackagePathVarLocation = virthualEnvDir dirStructure </> "ghc_package_path_var"
+        ghcPackagePathVar         = ghcPkgDbPath
+    debug $ "installing ghc_package_path_var file to " ++ ghcPackagePathVarLocation
+    indentMessages $ trace $ "path_var_prependix contents: " ++ ghcPackagePathVar
+    liftIO $ writeFile ghcPackagePathVarLocation ghcPackagePathVar
+
 -- install activate script (in bin/ directory) inside virtual environment dir structure
 installActivateScript :: MyMonad ()
 installActivateScript = do
   info "Installing activate script"
   virthualEnvName <- asks vheName
   dirStructure    <- vheDirStructure
-  ghc             <- asks ghcSource
-  ghcPkgPath <- case ghc of
-                 System    -> return $ ghcPackagePath dirStructure
-                 Tarball _ -> do
-                   externalGhcPkgDbPath <- indentMessages externalGhcPkgDb
-                   return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath
+  ghcPkgDbPath    <- indentMessages ghcPkgDbPathLocation
   let activateScript = virthualEnvBinDir dirStructure </> "activate"
   indentMessages $ debug $ "using location: " ++ activateScript
   let activateScriptContents = substs [ ("<VIRTHUALENV_NAME>", virthualEnvName)
+                                      , ("<VIRTHUALENV_DIR>", virthualEnvDir dirStructure)
                                       , ("<VIRTHUALENV>", virthualEnv dirStructure)
-                                      , ("<GHC_PACKAGE_PATH>", ghcPkgPath)
+                                      , ("<GHC_PACKAGE_PATH>", ghcPkgDbPath)
                                       , ("<VIRTHUALENV_BIN_DIR>", virthualEnvBinDir dirStructure)
                                       , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
                                       , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
@@ -75,6 +97,7 @@ installActivateScript = do
     trace "activate script contents:"
     indentMessages $ mapM_ trace $ lines activateScriptContents
   liftIO $ writeFile activateScript activateScriptContents
+  indentMessages installActivateScriptSupportFiles
 
 -- install cabal's config file (in cabal/ directory) inside virtual environment dir structure
 installCabalConfig :: MyMonad ()
