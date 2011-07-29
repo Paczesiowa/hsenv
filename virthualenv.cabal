@@ -86,6 +86,8 @@ Tested-with:         GHC == 6.12.3, GHC == 7.0.4
 
 Data-files:          virthualenv.el
 
+Extra-source-files:  skeletons/activate, skeletons/cabal, skeletons/cabal_config
+
 Cabal-version:       >=1.6
 
 Executable virthualenv
@@ -106,6 +108,19 @@ Executable virthualenv
                , file-embed >= 0.0.4.1 && < 0.1
                , split >= 0.1.4 && < 0.2
                , safe >= 0.3 && < 0.4
+
+  Other-modules: Util.Cabal
+               , Util.Template
+               , Util.IO
+               , Skeletons
+               , Types
+               , MyMonad
+               , Args
+               , Paths
+               , SanityCheck
+               , Process
+               , PackageManagement
+               , Actions
 
 Source-repository head
   Type:     git
