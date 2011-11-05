@@ -1,4 +1,5 @@
-                          Virtual Haskell Environment
+Virtual Haskell Environment
+===========================
 
 What is it?
 -----------
