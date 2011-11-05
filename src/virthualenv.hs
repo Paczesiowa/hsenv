@@ -51,3 +51,5 @@ realMain = do
   installActivateScript
   installCabalWrapper
   cabalUpdate
+  info ""
+  info "To activate the new environment use 'source .virthualenv/bin/activate'"
