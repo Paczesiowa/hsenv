@@ -30,7 +30,7 @@ Next, create your new isolated Haskell environment
 
 > virthualenv
 
-Now, every time you want to use this enviroment, you have to activate it:
+Now, every time you want to use this environment, you have to activate it:
 
 > source .virthualenv/bin/activate
 
@@ -49,17 +49,56 @@ or just close the current shell (with exit).
 
 Advanced usage
 --------------
-The only advanced usage is using different GHC version.
-This can be useful to test your code against different GHC version
-(even against nightly builds).
+Here's the most advanced usage of virthualenv. Let's say you want to:
+* hack on json library
+* do so comfortably
+* use your own version of parsec library
+* and do all this using nightly version of GHC
 
 First, download binary distribution of GHC for your platform
-(e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2),
-then create a new environment using that GHC:
+(e.g. ghc-7.3.20111105-i386-unknown-linux.tar.bz2).
 
-> virthualenv --ghc=/path/to/ghc_something.tar.bz2
+Create a directory for you environment:
 
-Then, proceed (with [de]activation) as in the basic usage case.
+> mkdir /tmp/test; cd /tmp/test
+
+Then, create a new environment using that GHC:
+
+> virthualenv --ghc=/path/to/ghc-7.3.20111105-i386-unknown-linux.tar.bz2
+
+Activate it:
+
+> source .virthualenv/bin/activate
+
+Download a copy of json library and your private version of parsec:
+
+> darcs get http://patch-tag.com/r/Paczesiowa/parsec; cabal unpack json
+
+Install parsec:
+
+> cd parsec2; cabal install
+
+Install the rest of json deps:
+
+> cd ../json-0.5; cabal install --only-dependencies
+
+Now, let's say you want to hack on Parsec module of json library.
+Open it in emacs:
+
+> emacsclient Text/JSON/Parsec.hs
+
+Activate the virtual environment (virthualenv must be required earlier):
+
+> M-x virthualenv-activate <RET> /tmp/test/ <RET>
+
+Edit some code and load it in ghci using 'C-c C-l'. If it type checks,
+you can play around with the code using nightly version of ghci running
+in your virtual environment. When you're happy with the code, exit emacs
+and install your edited json library:
+
+> cabal install
+
+And that's it.
 
 Misc
 ----
@@ -101,3 +140,14 @@ A: No, it should work with any POSIX-compliant shell. It's been tested with
 
 Q: Can I use it with a different haskell package repository than hackage?  
 A: Yes, just adjust the url in .virthualenv/cabal/config file.
+
+Q: How do I remove the whole virtual environment?  
+A: If it's activated - 'deactivate' it. Then, delete
+   the .virthualenv/ directory.
+
+Q: Is every environment completely separate from other environments and
+   the system environment?  
+A: Yes. The only (minor) exception is ghci history - there's only one
+   per user history file. Also, if you alter your system's GHC, then
+   virtual environments using system's GHC copy will probably break.
+   Virtual environments using GHC from a tarball should continue to work.
