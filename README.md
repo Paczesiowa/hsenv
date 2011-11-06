@@ -50,6 +50,7 @@ or just close the current shell (with exit).
 Advanced usage
 --------------
 Here's the most advanced usage of virthualenv. Let's say you want to:
+
 * hack on json library
 * do so comfortably
 * use your own version of parsec library
