@@ -51,7 +51,7 @@ runProcess env prog args input = do
 outsideGhcPkg :: [String] -> MyMonad String
 outsideGhcPkg args = do
   ghc <- asks ghcSource
-  dirStructure <- vheDirStructure
+  dirStructure <- hseDirStructure
   ghcPkg <- case ghc of
     System    -> do
       debug "Running system's version of ghc-pkg"
@@ -84,7 +84,7 @@ externalGhcPkgDb = do
 insideGhcPkg :: [String] -> Maybe String -> MyMonad String
 insideGhcPkg args input = do
   ghc <- asks ghcSource
-  dirStructure <- vheDirStructure
+  dirStructure <- hseDirStructure
   env <- getVirtualEnvironment
   ghcPkg <- case ghc of
     System    -> do
@@ -99,7 +99,7 @@ insideGhcPkg args input = do
 ghcPkgDbPathLocation :: MyMonad String
 ghcPkgDbPathLocation = do
   debug "Determining value of GHC_PACKAGE_PATH to be used inside virtual environment"
-  dirStructure <- vheDirStructure
+  dirStructure <- hseDirStructure
   ghc <- asks ghcSource
   case ghc of
     System    -> return $ ghcPackagePath dirStructure

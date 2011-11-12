@@ -28,15 +28,15 @@ usage = do
     putStrLn "--verbose           Print some debugging info"
     putStrLn "--very-verbose      Print some debugging info"
     putStrLn "--skip-sanity-check Skip all the sanity checks (use at your own risk)"
-    putStrLn "--name=NAME         Use NAME for name of Virthual Haskell Environment"
+    putStrLn "--name=NAME         Use NAME for name of Virtual Haskell Environment"
     putStrLn "                    (defaults to the name of the current directory)"
     putStrLn "--ghc=FILE          Use GHC from provided tarball (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
-    putStrLn "                    Without this flag virthualenv will use system's copy of GHC"
+    putStrLn "                    Without this flag hsenv will use system's copy of GHC"
     putStrLn "--make-cmd=NAME     Used as make substitute for installing GHC from tarball (e.g. gmake),"
     putStrLn "                    defaults to 'make'"
     putStrLn ""
     putStrLn "Creates Virtual Haskell Environment in the current directory."
-    putStrLn "All files will be stored in the .virthualenv/ subdirectory."
+    putStrLn "All files will be stored in the .hsenv/ subdirectory."
 
 newtype ArgMonad a = ArgMonad (ErrorT String (StateT Args IO) a)
     deriving (MonadState Args, MonadError String, Monad, MonadIO)
@@ -142,11 +142,11 @@ realParseArgs = do
   skipSanityCheckFlag <- isSingleValueSet "skip-sanity-check"
   makeCmdFlag <- getSingleLongValueArg "make-cmd"
   let make = fromMaybe "make" makeCmdFlag
-  return Options{ verbosity = verboseness
+  return Options{ verbosity       = verboseness
                 , skipSanityCheck = skipSanityCheckFlag
-                , vheName   = name
-                , ghcSource = ghc
-                , makeCmd   = make
+                , hsEnvName       = name
+                , ghcSource       = ghc
+                , makeCmd         = make
                 }
 
 parseArgs :: [String] -> IO (Either String Options)

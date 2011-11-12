@@ -1,4 +1,4 @@
-module Paths ( vheDirStructure
+module Paths ( hseDirStructure
              , cabalConfigLocation
              , getVirtualEnvironment
              ) where
@@ -12,27 +12,27 @@ import MyMonad
 
 -- returns record containing paths to all important directories
 -- inside virtual environment dir structure
-vheDirStructure :: MyMonad DirStructure
-vheDirStructure = do
+hseDirStructure :: MyMonad DirStructure
+hseDirStructure = do
   cwd <- liftIO getCurrentDirectory
-  let virthualEnvLocation    = cwd
-      virthualEnvDirLocation = virthualEnvLocation </> ".virthualenv"
-      cabalDirLocation       = virthualEnvDirLocation </> "cabal"
-      ghcDirLocation         = virthualEnvDirLocation </> "ghc"
-  return DirStructure { virthualEnv       = virthualEnvLocation
-                      , virthualEnvDir    = virthualEnvDirLocation
-                      , ghcPackagePath    = virthualEnvDirLocation </> "ghc_pkg_db"
-                      , cabalDir          = cabalDirLocation
-                      , cabalBinDir       = cabalDirLocation </> "bin"
-                      , virthualEnvBinDir = virthualEnvDirLocation </> "bin"
-                      , ghcDir            = ghcDirLocation
-                      , ghcBinDir         = ghcDirLocation </> "bin"
+  let hsEnvLocation    = cwd
+      hsEnvDirLocation = hsEnvLocation </> ".hsenv"
+      cabalDirLocation = hsEnvDirLocation </> "cabal"
+      ghcDirLocation   = hsEnvDirLocation </> "ghc"
+  return DirStructure { hsEnv          = hsEnvLocation
+                      , hsEnvDir       = hsEnvDirLocation
+                      , ghcPackagePath = hsEnvDirLocation </> "ghc_pkg_db"
+                      , cabalDir       = cabalDirLocation
+                      , cabalBinDir    = cabalDirLocation </> "bin"
+                      , hsEnvBinDir    = hsEnvDirLocation </> "bin"
+                      , ghcDir         = ghcDirLocation
+                      , ghcBinDir      = ghcDirLocation </> "bin"
                       }
 
 -- returns location of cabal's config file inside virtual environment dir structure
 cabalConfigLocation :: MyMonad FilePath
 cabalConfigLocation = do
-  dirStructure <- vheDirStructure
+  dirStructure <- hseDirStructure
   return $ cabalDir dirStructure </> "config"
 
 -- returns environment dictionary used in Virtual Haskell Environment
@@ -41,5 +41,5 @@ cabalConfigLocation = do
 getVirtualEnvironment :: MyMonad [(String, String)]
 getVirtualEnvironment = do
   env <- liftIO getEnvironment
-  dirStructure <- vheDirStructure
+  dirStructure <- hseDirStructure
   return $ ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,_) -> k /= "GHC_PACKAGE_PATH") env

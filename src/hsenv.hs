@@ -30,11 +30,11 @@ main = do
                   Left err -> do
                     hPutStrLn stderr $ getExceptionMessage err
                     hPutStrLn stderr ""
-                    hPutStrLn stderr "virthualenv.log file contains detailed description of the process."
+                    hPutStrLn stderr "hsenv.log file contains detailed description of the process."
                     let errorLog = unlines $ messageLog ++ ["", getExceptionMessage err]
-                    writeFile "virthualenv.log" errorLog
+                    writeFile "hsenv.log" errorLog
                     exitFailure
-                  Right ()  -> writeFile (".virthualenv" </> "virthualenv.log") $ unlines messageLog
+                  Right ()  -> writeFile (".hsenv" </> "hsenv.log") $ unlines messageLog
 
 realMain :: MyMonad ()
 realMain = do
@@ -52,4 +52,4 @@ realMain = do
   installCabalWrapper
   cabalUpdate
   info ""
-  info "To activate the new environment use 'source .virthualenv/bin/activate'"
+  info "To activate the new environment use 'source .hsenv/bin/activate'"

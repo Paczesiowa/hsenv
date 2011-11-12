@@ -1,15 +1,15 @@
-Name:                virthualenv
+Name:                hsenv
 
 Version:             0.2
 
 Synopsis:            Virtual Haskell Environment builder
 
-Description:         virthualenv is a tool (inspired by Python's virtualenv) to create isolated Haskell environments.
+Description:         hsenv is a tool (inspired by Python's virtualenv) to create isolated Haskell environments.
                      .
-                     It creates a sandboxed environment in a .virthualenv/ directory, which, when activated,
+                     It creates a sandboxed environment in a .hsenv/ directory, which, when activated,
                      allows you to use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haskell
                      code and environment. It's possible to create an environment, that uses different GHC version
-                     than your currently installed. virthualenv is supposed to be easier to learn (and use) than
+                     than your currently installed. hsenv is supposed to be easier to learn (and use) than
                      similar packages (like cabal-dev or capri).
                      .
                      Basic usage.
@@ -23,11 +23,11 @@ Description:         virthualenv is a tool (inspired by Python's virtualenv) to 
                      .
                      Next, create your new isolated Haskell environment (this is a one time only (per environment) step):
                      .
-                     > virthualenv
+                     > hsenv
                      .
                      Now, every time you want to use this enviroment, you have to activate it:
                      .
-                     > source .virthualenv/bin/activate
+                     > source .hsenv/bin/activate
                      .
                      That's it! Now it's possible to use all regular Haskell tools like usual, but it won't affect
                      your global/system's Haskell environment, and also your per-user environment (from ~/.cabal and
@@ -48,19 +48,19 @@ Description:         virthualenv is a tool (inspired by Python's virtualenv) to 
                      First, download binary distribution of GHC for your platform
                      (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2), then create a new environment using that GHC
                      .
-                     > virthualenv --ghc=/path/to/ghc_something.tar.bz2
+                     > hsenv --ghc=/path/to/ghc_something.tar.bz2
                      .
                      Then, proceed (with [de]activation) as in basic case.
                      .
                      Misc.
                      .
-                     virthualenv has been tested on i386 Linux systems, but it should work on any Posix platform.
+                     hsenv has been tested on i386 Linux systems, but it should work on any Posix platform.
                      External (from tarball) GHC feature requires binary GHC distribution compiled for your platform,
                      that can be extracted with tar and installed with "./configure --prefix=PATH; make install".
                      .
-                     For more info please consult "virthualenv --help" or the attached README file.
+                     For more info please consult "hsenv --help" or the attached README file.
 
-Homepage:            https://github.com/Paczesiowa/virthualenv
+Homepage:            https://github.com/Paczesiowa/hsenv
 
 License:             BSD3
 
@@ -78,21 +78,21 @@ Build-type:          Simple
 
 Stability:           alpha
 
-Bug-reports:         https://github.com/Paczesiowa/virthualenv/issues
+Bug-reports:         https://github.com/Paczesiowa/hsenv/issues
 
-Package-url:         http://hackage.haskell.org/package/virthualenv
+Package-url:         http://hackage.haskell.org/package/hsenv
 
 Tested-with:         GHC == 6.12.3, GHC == 7.0.4
 
-Data-files:          virthualenv.el, README.md
+Data-files:          hsenv.el, README.md
 
 Extra-source-files:  skeletons/activate, skeletons/cabal, skeletons/cabal_config
 
 Cabal-version:       >=1.6
 
-Executable virthualenv
+Executable hsenv
 
-  Main-is: virthualenv.hs
+  Main-is: hsenv.hs
 
   Hs-source-dirs: src
 
@@ -124,4 +124,4 @@ Executable virthualenv
 
 Source-repository head
   Type:     git
-  Location: git://github.com/Paczesiowa/virthualenv.git
+  Location: git://github.com/Paczesiowa/hsenv.git

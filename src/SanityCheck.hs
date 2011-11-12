@@ -6,28 +6,28 @@ import System.Directory (doesDirectoryExist)
 import Util.IO (getEnvVar, which)
 import Types
 import MyMonad
-import Paths (vheDirStructure)
+import Paths (hseDirStructure)
 
 -- check if any virtual env is already active
-checkVHE :: MyMonad ()
-checkVHE = do
-    virthualEnvVar <- liftIO $ getEnvVar "VIRTHUALENV"
-    case virthualEnvVar of
+checkHSE :: MyMonad ()
+checkHSE = do
+    hsEnvVar <- liftIO $ getEnvVar "HSENV"
+    case hsEnvVar of
         Nothing   -> return ()
         Just path -> do
-            virthualEnvName <- liftIO $ getEnvVar "VIRTHUALENV_NAME"
-            case virthualEnvName of
+            hsEnvNameVar <- liftIO $ getEnvVar "HSENV_NAME"
+            case hsEnvNameVar of
                 Nothing -> do
-                       debug $ "warning: VIRTHUALENV environment variable is defined" ++ ", but no VIRHTUALENV_NAME environment variable defined."
+                       debug $ "warning: HSENV environment variable is defined" ++ ", but no VIRHTUALENV_NAME environment variable defined."
                        throwError $ MyException $ "There is already active Virtual Haskell Environment (at " ++ path ++ ")."
                 Just name ->
                     throwError $ MyException $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
 
-checkVirthualEnvAlreadyExists :: MyMonad ()
-checkVirthualEnvAlreadyExists = do
-  dirStructure <- vheDirStructure
-  flag <- liftIO $ doesDirectoryExist $ virthualEnvDir dirStructure
-  when flag $ throwError $ MyException $ "There is already .virthualenv directory at " ++ virthualEnv dirStructure
+checkHsenvAlreadyExists :: MyMonad ()
+checkHsenvAlreadyExists = do
+  dirStructure <- hseDirStructure
+  flag         <- liftIO $ doesDirectoryExist $ hsEnvDir dirStructure
+  when flag $ throwError $ MyException $ "There is already .hsenv directory at " ++ hsEnv dirStructure
 
 -- check if cabal binary exist on PATH
 checkCabalInstall :: MyMonad ()
@@ -57,7 +57,7 @@ checkGhc = do
 -- check if everything is sane
 sanityCheck :: MyMonad ()
 sanityCheck = do
-  checkVHE
-  checkVirthualEnvAlreadyExists
+  checkHSE
+  checkHsenvAlreadyExists
   checkCabalInstall
   checkGhc

@@ -36,9 +36,9 @@ cabalUpdate = do
 -- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
 installCabalWrapper :: MyMonad ()
 installCabalWrapper = do
-  cabalConfig      <- cabalConfigLocation
-  dirStructure     <- vheDirStructure
-  let cabalWrapper = virthualEnvBinDir dirStructure </> "cabal"
+  cabalConfig  <- cabalConfigLocation
+  dirStructure <- hseDirStructure
+  let cabalWrapper = hsEnvBinDir dirStructure </> "cabal"
   info $ concat [ "Installing cabal wrapper using "
                 , cabalConfig
                 , " at "
@@ -54,14 +54,14 @@ installCabalWrapper = do
 installActivateScriptSupportFiles :: MyMonad ()
 installActivateScriptSupportFiles = do
   debug "installing supporting files"
-  dirStructure <- vheDirStructure
-  ghc <- asks ghcSource
+  dirStructure <- hseDirStructure
+  ghc          <- asks ghcSource
   indentMessages $ do
-    let pathVarPrependixLocation = virthualEnvDir dirStructure </> "path_var_prependix"
+    let pathVarPrependixLocation = hsEnvDir dirStructure </> "path_var_prependix"
         pathVarElems =
             case ghc of
-              System    -> [virthualEnvBinDir dirStructure, cabalBinDir dirStructure]
-              Tarball _ -> [ virthualEnvBinDir dirStructure
+              System    -> [hsEnvBinDir dirStructure, cabalBinDir dirStructure]
+              Tarball _ -> [ hsEnvBinDir dirStructure
                           , cabalBinDir dirStructure
                           , ghcBinDir dirStructure
                           ]
@@ -70,7 +70,7 @@ installActivateScriptSupportFiles = do
     indentMessages $ trace $ "path_var_prependix contents: " ++ pathVarPrependix
     liftIO $ writeFile pathVarPrependixLocation pathVarPrependix
     ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
-    let ghcPackagePathVarLocation = virthualEnvDir dirStructure </> "ghc_package_path_var"
+    let ghcPackagePathVarLocation = hsEnvDir dirStructure </> "ghc_package_path_var"
         ghcPackagePathVar         = ghcPkgDbPath
     debug $ "installing ghc_package_path_var file to " ++ ghcPackagePathVarLocation
     indentMessages $ trace $ "path_var_prependix contents: " ++ ghcPackagePathVar
@@ -80,16 +80,16 @@ installActivateScriptSupportFiles = do
 installActivateScript :: MyMonad ()
 installActivateScript = do
   info "Installing activate script"
-  virthualEnvName <- asks vheName
-  dirStructure    <- vheDirStructure
-  ghcPkgDbPath    <- indentMessages ghcPkgDbPathLocation
-  let activateScript = virthualEnvBinDir dirStructure </> "activate"
+  hsEnvName'   <- asks hsEnvName
+  dirStructure <- hseDirStructure
+  ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
+  let activateScript = hsEnvBinDir dirStructure </> "activate"
   indentMessages $ debug $ "using location: " ++ activateScript
-  let activateScriptContents = substs [ ("<VIRTHUALENV_NAME>", virthualEnvName)
-                                      , ("<VIRTHUALENV_DIR>", virthualEnvDir dirStructure)
-                                      , ("<VIRTHUALENV>", virthualEnv dirStructure)
+  let activateScriptContents = substs [ ("<HSENV_NAME>", hsEnvName')
+                                      , ("<HSENV_DIR>", hsEnvDir dirStructure)
+                                      , ("<HSENV>", hsEnv dirStructure)
                                       , ("<GHC_PACKAGE_PATH>", ghcPkgDbPath)
-                                      , ("<VIRTHUALENV_BIN_DIR>", virthualEnvBinDir dirStructure)
+                                      , ("<HSENV_BIN_DIR>", hsEnvBinDir dirStructure)
                                       , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
                                       , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
                                       ] activateSkel
@@ -102,8 +102,8 @@ installActivateScript = do
 -- install cabal's config file (in cabal/ directory) inside virtual environment dir structure
 installCabalConfig :: MyMonad ()
 installCabalConfig = do
-  cabalConfig     <- cabalConfigLocation
-  dirStructure    <- vheDirStructure
+  cabalConfig  <- cabalConfigLocation
+  dirStructure <- hseDirStructure
   info $ "Installing cabal config at " ++ cabalConfig
   let cabalConfigContents = substs [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
                                    , ("<CABAL_DIR>", cabalDir dirStructure)
@@ -115,20 +115,20 @@ installCabalConfig = do
 
 createDirStructure :: MyMonad ()
 createDirStructure = do
-  dirStructure <- vheDirStructure
+  dirStructure <- hseDirStructure
   info "Creating Virtual Haskell directory structure"
   indentMessages $ do
-    debug $ "virthualenv directory: " ++ virthualEnvDir dirStructure
-    liftIO $ createDirectory $ virthualEnvDir dirStructure
+    debug $ "hsenv directory: " ++ hsEnvDir dirStructure
+    liftIO $ createDirectory $ hsEnvDir dirStructure
     debug $ "cabal directory: " ++ cabalDir dirStructure
     liftIO $ createDirectory $ cabalDir dirStructure
-    debug $ "virthualenv bin directory: " ++ virthualEnvBinDir dirStructure
-    liftIO $ createDirectory $ virthualEnvBinDir dirStructure
+    debug $ "hsenv bin directory: " ++ hsEnvBinDir dirStructure
+    liftIO $ createDirectory $ hsEnvBinDir dirStructure
 
 -- initialize private GHC package database inside virtual environment
 initGhcDb :: MyMonad ()
 initGhcDb = do
-  dirStructure <- vheDirStructure
+  dirStructure <- hseDirStructure
   info $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
   out <- indentMessages $ outsideGhcPkg ["--version"]
   case lastMay $ words out of
@@ -187,8 +187,8 @@ installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
   info $ "Installing GHC from " ++ tarballPath
   indentMessages $ do
-    dirStructure <- vheDirStructure
-    tmpGhcDir <- liftIO $ createTemporaryDirectory (virthualEnv dirStructure) "ghc"
+    dirStructure <- hseDirStructure
+    tmpGhcDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc"
     debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
     _ <- indentMessages $ runProcess Nothing "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] Nothing
     let configureScript = tmpGhcDir </> "configure"

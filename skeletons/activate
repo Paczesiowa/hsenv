@@ -1,37 +1,37 @@
-if [ -n "${VIRTHUALENV}" ]; then
-    if [ "<VIRTHUALENV>" = "${VIRTHUALENV}" ]; then
-        echo "${VIRTHUALENV_NAME} Virtual Haskell Environment is already active."
+if [ -n "${HSENV}" ]; then
+    if [ "<HSENV>" = "${HSENV}" ]; then
+        echo "${HSENV_NAME} Virtual Haskell Environment is already active."
     else
-        echo "There is already ${VIRTHUALENV_NAME} Virtual Haskell Environment activated."
+        echo "There is already ${HSENV_NAME} Virtual Haskell Environment activated."
         echo "Deactivate it first (using command 'deactivate'), to activate"
-        echo "<VIRTHUALENV_NAME> environment."
+        echo "<HSENV_NAME> environment."
     fi
     return 1
 fi
 
-export VIRTHUALENV="<VIRTHUALENV>"
-export VIRTHUALENV_NAME="<VIRTHUALENV_NAME>"
+export HSENV="<HSENV>"
+export HSENV_NAME="<HSENV_NAME>"
 
-echo "Activating ${VIRTHUALENV_NAME} Virtual Haskell Environment (at ${VIRTHUALENV})."
+echo "Activating ${HSENV_NAME} Virtual Haskell Environment (at ${HSENV})."
 echo ""
 echo "Use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haskell environment."
 echo ""
 echo "To exit from this virtual environment, enter command 'deactivate'."
 
-export "VIRTHUALENV_PATH_BACKUP"="${PATH}"
-export "VIRTHUALENV_PS1_BACKUP"="${PS1}"
+export "HSENV_PATH_BACKUP"="${PATH}"
+export "HSENV_PS1_BACKUP"="${PS1}"
 
 deactivate() {
-    echo "Deactivating ${VIRTHUALENV_NAME} Virtual Haskell Environment (at ${VIRTHUALENV})."
+    echo "Deactivating ${HSENV_NAME} Virtual Haskell Environment (at ${HSENV})."
     echo "Restoring previous environment settings."
 
-    export "PATH"="${VIRTHUALENV_PATH_BACKUP}"
-    unset -v "VIRTHUALENV_PATH_BACKUP"
-    export "PS1"="${VIRTHUALENV_PS1_BACKUP}"
-    unset -v "VIRTHUALENV_PS1_BACKUP"
+    export "PATH"="${HSENV_PATH_BACKUP}"
+    unset -v "HSENV_PATH_BACKUP"
+    export "PS1"="${HSENV_PS1_BACKUP}"
+    unset -v "HSENV_PS1_BACKUP"
 
-    unset -v VIRTHUALENV
-    unset -v VIRTHUALENV_NAME
+    unset -v HSENV
+    unset -v HSENV_NAME
     unset -v GHC_PACKAGE_PATH
     unset -f deactivate
 
@@ -40,12 +40,12 @@ deactivate() {
     fi
 }
 
-PATH_PREPENDIX="$(cat <VIRTHUALENV_DIR>/path_var_prependix)"
+PATH_PREPENDIX="$(cat <HSENV_DIR>/path_var_prependix)"
 export PATH="${PATH_PREPENDIX}:${PATH}"
 unset -v PATH_PREPENDIX
 
-export GHC_PACKAGE_PATH="$(cat <VIRTHUALENV_DIR>/ghc_package_path_var)"
-export PS1="(${VIRTHUALENV_NAME})${PS1}"
+export GHC_PACKAGE_PATH="$(cat <HSENV_DIR>/ghc_package_path_var)"
+export PS1="(${HSENV_NAME})${PS1}"
 
 if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
     hash -r
