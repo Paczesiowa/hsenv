@@ -3,20 +3,17 @@ module Util.Args where
 import Data.Monoid
 import Control.Arrow
 import qualified Control.Category as C
+import Data.Maybe (fromMaybe)
 
 {-# ANN module "HLint: ignore Use String" #-}
-data Args = Args { shortSwitches  :: [Char]
-                 , longSwitches   :: [String]
-                 , shortValArgs   :: [(Char, String)]
-                 , longValArgs    :: [(String, String)]
-                 , positionalArgs :: [String]
+data Args = Args { switches :: [String]
+                 , valArgs  :: [(String, String)]
                  }
     deriving Show
 
 instance Monoid Args where
-    mempty = Args [] [] [] [] []
-    Args ss1 ls1 sva1 lva1 pa1 `mappend` Args ss2 ls2 sva2 lva2 pa2 =
-      Args (ss1 ++ ss2) (ls1 ++ ls2) (sva1 ++ sva2) (lva1 ++ lva2) (pa1 ++ pa2)
+    mempty = Args [] []
+    Args xs1 ys1 `mappend` Args xs2 ys2 = Args (xs1 ++ xs2) (ys1 ++ ys2)
 
 breakOn :: Eq a => a -> [a] -> Maybe ([a], [a])
 breakOn sep = aux []
@@ -27,33 +24,29 @@ breakOn sep = aux []
 parseArgument :: String -> Args
 parseArgument ('-':'-':arg) =
   case breakOn '=' arg of
-    Nothing         -> mempty{longSwitches = [arg]}
-    Just (key, val) -> mempty{longValArgs = [(key, val)]}
-parseArgument ['-', c] = mempty{shortSwitches = [c]}
-parseArgument ('-':k:val) = mempty{shortValArgs = [(k, val)]}
-parseArgument arg = mempty{positionalArgs = [arg]}
+    Nothing         -> mempty{switches = [arg]}
+    Just (key, val) -> mempty{valArgs = [(key, val)]}
+parseArgument ['-', _c] = mempty
+parseArgument ('-':_k:_val) = mempty
+parseArgument _ = mempty
 
 parseArguments :: [String] -> Args
 parseArguments args =
     case breakOn "--" args of
       Nothing -> mconcat $ map parseArgument args
-      Just (args', positionals) ->
-        mconcat (map parseArgument args') `mappend` mempty{positionalArgs = positionals}
+      Just (args', _positionals) -> mconcat $ map parseArgument args'
 
-data KnownArg = LongAndShort String Char
-              | Long String
-              | Short Char
-     deriving Show
+data ArgDescr = Switch { argName :: String
+                       , helpMsg :: String
+                       }
+              | ValArg { argName      :: String
+                       , valTemplate  :: String
+                       , defaultValue :: Maybe String
+                       , helpMsg      :: String
+                       }
+     deriving (Show, Eq)
 
-data Multiplicity = Single
-                  | Multiple
-     deriving Show
-
-data KnownArgs = KnownArgs { knownValueArgs :: [(KnownArg, Multiplicity)]
-                           , knownSwitches  :: [(KnownArg, Multiplicity)]
-                           , positionalsOk  :: Bool
-                           }
-     deriving Show
+type KnownArgs = [ArgDescr]
 
 data ArgArrow a b = ArgArrow KnownArgs (Args -> a -> IO b)
 
@@ -63,56 +56,35 @@ runArgArrow args (ArgArrow _ m) = m args ()
 -- usage :: ArgArrow a b -> String
 -- usage (ArgArrow args _) = "Known arguments: " ++ unwords args
 
--- TODO: check if multiplicities match
-mergeKnownArgs :: [(KnownArg, Multiplicity)] -> [(KnownArg, Multiplicity)] -> [(KnownArg, Multiplicity)]
+-- TODO: check if info/descriptions match
+mergeKnownArgs :: KnownArgs -> KnownArgs -> KnownArgs
 mergeKnownArgs = (++)
 
 instance C.Category ArgArrow where
-  id = ArgArrow KnownArgs{ knownValueArgs = []
-                         , knownSwitches  = []
-                         , positionalsOk  = False
-                         } $ \_ x -> return x
+  id = ArgArrow [] $ \_ x -> return x
   ArgArrow knArgs2 m2 . ArgArrow knArgs1 m1 =
-    ArgArrow KnownArgs{ knownValueArgs =
-                           mergeKnownArgs (knownValueArgs knArgs1) (knownValueArgs knArgs2)
-                      , knownSwitches  =
-                           mergeKnownArgs (knownSwitches knArgs1) (knownSwitches knArgs2)
-                      , positionalsOk  = positionalsOk knArgs1 || positionalsOk knArgs2
-                      } $ \s x -> m1 s x >>= m2 s
+    ArgArrow (mergeKnownArgs knArgs2 knArgs1) $ \s x -> m1 s x >>= m2 s
 
 instance Arrow ArgArrow where
-  arr f = ArgArrow KnownArgs{ knownValueArgs = []
-                            , knownSwitches  = []
-                            , positionalsOk  = False
-                            } $ \_ x -> return $ f x
+  arr f = ArgArrow [] $ \_ x -> return $ f x
   first (ArgArrow knArgs m) = ArgArrow knArgs $ \s (x, y) -> do
     z <- m s x
     return (z, y)
 
--- getOption :: String -> ArgArrow () String
--- getOption arg = ArgArrow [arg] $ \s _ -> return $ fromJust $ lookup arg s
+getSwitch :: String -> String -> ArgArrow () Bool
+getSwitch name info = ArgArrow knArgs m
+    where m args _ = return $ name `elem` switches args
+          knArgs   = [Switch name info]
 
--- liftIO :: (a -> IO b) -> ArgArrow a b
--- liftIO m = ArgArrow [] $ \_ x -> m x
+getOptionWithDefault :: String -> String -> String -> String -> ArgArrow () String
+getOptionWithDefault name template default' info = ArgArrow knArgs m
+    where knArgs = [ValArg name template (Just default') info]
+          m args _ = return $ fromMaybe default' $ lookup name $ valArgs args
 
--- liftIO2 :: IO a -> ArgArrow () a
--- liftIO2 m = ArgArrow [] $ \_ _ -> m
+getOptionWithDefault2 :: String -> String -> String -> String -> ArgArrow () (Maybe String)
+getOptionWithDefault2 name template defaultStr info = ArgArrow knArgs m
+    where knArgs = [ValArg name template (Just defaultStr) info]
+          m args _ = return $ lookup name $ valArgs args
 
--- -- end of library
-
--- data Options = Options Bool Int String deriving Show
-
--- foo :: ArgArrow () Options
--- foo = proc () -> do
---   bool   <- getOption "bool" >>^ read   -< ()
---   number <- getOption "number" >>^ read -< ()
---   string <- getOption "string" -< ()
---   returnA -< Options bool number string
-
--- main = do
---   let args = [ ("bool", "True")
---              , ("number", "1337")
---              , ("string", "foo")
---              ]
---   putStrLn $ usage foo
---   runArgArrow args foo >>= print
+liftIO :: IO a -> ArgArrow () a
+liftIO m = ArgArrow [] $ \_ _ -> m
