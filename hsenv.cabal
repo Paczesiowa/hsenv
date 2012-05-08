@@ -103,7 +103,7 @@ Executable hsenv
                , filepath >= 1.1.0.3 && < 1.4
                , directory >= 1.0.1.0 && < 1.2
                , Cabal >= 1.8.0.6 && < 1.15
-               , mtl >= 1.1.0.2 && < 2.1
+               , mtl >= 1.1.0.2 && < 2.2
                , bytestring >= 0.9.1.7 && < 0.10
                , file-embed >= 0.0.4.1 && < 0.1
                , split >= 0.1.4 && < 0.2
