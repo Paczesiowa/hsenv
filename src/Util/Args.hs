@@ -4,6 +4,7 @@ import Data.Monoid
 import Control.Arrow
 import qualified Control.Category as C
 import Data.Maybe (fromMaybe)
+import System.Environment (getProgName)
 
 {-# ANN module "HLint: ignore Use String" #-}
 data Args = Args { switches :: [String]
@@ -36,12 +37,16 @@ parseArguments args =
       Nothing -> mconcat $ map parseArgument args
       Just (args', _positionals) -> mconcat $ map parseArgument args'
 
+data DefaultValue = ConstValue String
+                  | DynValue String
+    deriving (Show, Eq)
+
 data ArgDescr = Switch { argName :: String
                        , helpMsg :: String
                        }
               | ValArg { argName      :: String
                        , valTemplate  :: String
-                       , defaultValue :: Maybe String
+                       , defaultValue :: DefaultValue
                        , helpMsg      :: String
                        }
      deriving (Show, Eq)
@@ -53,8 +58,32 @@ data ArgArrow a b = ArgArrow KnownArgs (Args -> a -> IO b)
 runArgArrow :: Args -> ArgArrow () a -> IO a
 runArgArrow args (ArgArrow _ m) = m args ()
 
--- usage :: ArgArrow a b -> String
--- usage (ArgArrow args _) = "Known arguments: " ++ unwords args
+padTo :: String -> Int -> String
+padTo s n = take n $ s ++ repeat ' '
+
+showFlagDescr :: ArgDescr -> [String]
+showFlagDescr argDescr = zipWith makeLine lefts msgLines
+    where lefts    = [argLine] ++ repeat ""
+          argLine  = case argDescr of
+                       Switch name _ -> "--" ++ name
+                       ValArg name tmpl _ _ -> concat ["--", name, "=", tmpl]
+          msgLines = lines $ case argDescr of
+                               Switch _ hlp -> hlp
+                               ValArg _ _ default' help ->
+                                   concat [help, "\n", defaultsLine default']
+          defaultsLine (ConstValue s) = concat ["(defaults to '", s, "')"]
+          defaultsLine (DynValue s)   = concat ["(defaults to ", s, ")"]
+          makeLine infoLine descrLine = (infoLine `padTo` 20) ++ descrLine
+
+usage :: ArgArrow a b -> IO String
+usage (ArgArrow args _) = do
+  self <- getProgName
+  let intro = "usage: " ++ self ++ " [FLAGS]"
+  return $ unlines $ [intro, "", "Flags:"] ++ flagsDescr ++ ["", outro1, outro2]
+      where outro1 = undefined
+            outro2 = undefined
+            flagsDescr = concatMap showFlagDescr args
+
 
 -- TODO: check if info/descriptions match
 mergeKnownArgs :: KnownArgs -> KnownArgs -> KnownArgs
@@ -71,6 +100,13 @@ instance Arrow ArgArrow where
     z <- m s x
     return (z, y)
 
+instance ArrowChoice ArgArrow where
+    left (ArgArrow knArgs m) =
+        ArgArrow knArgs $ \s x ->
+            case x of
+              Left y  -> Left `fmap` m s y
+              Right y -> return $ Right y
+
 getSwitch :: String -> String -> ArgArrow () Bool
 getSwitch name info = ArgArrow knArgs m
     where m args _ = return $ name `elem` switches args
@@ -78,13 +114,16 @@ getSwitch name info = ArgArrow knArgs m
 
 getOptionWithDefault :: String -> String -> String -> String -> ArgArrow () String
 getOptionWithDefault name template default' info = ArgArrow knArgs m
-    where knArgs = [ValArg name template (Just default') info]
+    where knArgs = [ValArg name template (ConstValue default') info]
           m args _ = return $ fromMaybe default' $ lookup name $ valArgs args
 
 getOptionWithDefault2 :: String -> String -> String -> String -> ArgArrow () (Maybe String)
 getOptionWithDefault2 name template defaultStr info = ArgArrow knArgs m
-    where knArgs = [ValArg name template (Just defaultStr) info]
+    where knArgs = [ValArg name template (DynValue defaultStr) info]
           m args _ = return $ lookup name $ valArgs args
 
-liftIO :: IO a -> ArgArrow () a
-liftIO m = ArgArrow [] $ \_ _ -> m
+liftIO :: (a -> IO b) -> ArgArrow a b
+liftIO m = ArgArrow [] $ \_ x -> m x
+
+liftIO' :: IO a -> ArgArrow () a
+liftIO' m = ArgArrow [] $ \_ _ -> m
