@@ -1,8 +1,6 @@
 {-# LANGUAGE Arrows #-}
 
-module Args ( usage
-            , parseArgs
-            ) where
+module Args (getArgs) where
 
 import Control.Arrow
 import Util.Args hiding (usage)
@@ -24,9 +22,9 @@ import Types
 verboseInfo = "Print some debugging info"
 veryVerboseInfo = "Print some more debugging info"
 nameInfo = "Use NAME as name of the Virtual Haskell Environment"
-ghcInfo = ""
-sanityInfo = ""
-makeInfo = ""
+ghcInfo = "Use GHC from provided tarball (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
+sanityInfo = "Skip all the sanity checks (use at your own risk)"
+makeInfo = "Used as make substitute for installing GHC from tarball (e.g. gmake)"
 
 realParseArgs :: ArgArrow () Options
 realParseArgs = proc () -> do
@@ -42,7 +40,7 @@ realParseArgs = proc () -> do
            Nothing -> do
              cwd <- liftIO' getCurrentDirectory -< ()
              returnA -< last $ splitPath cwd
-  ghcFlag <- getOptionWithDefault2 "ghc" "FILE" "" ghcInfo -< ()
+  ghcFlag <- getOptionWithDefault2 "ghc" "FILE" "system's copy of GHC" ghcInfo -< ()
   let ghc = case ghcFlag of
               Nothing   -> System
               Just path -> Tarball path
@@ -55,7 +53,8 @@ realParseArgs = proc () -> do
                    , makeCmd         = make
                    }
 
-parseArgs :: [String] -> IO Options
-parseArgs args = runArgArrow (parseArguments args) realParseArgs
+getArgs :: IO Options
+getArgs = parseArgs realParseArgs "0.2" outro
 
-usage = Util.Args.usage realParseArgs >>= putStrLn
+outro = "Creates Virtual Haskell Environment in the current directory.\n"
+        ++ "All files will be stored in the .hsenv/ subdirectory."

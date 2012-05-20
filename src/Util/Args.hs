@@ -1,10 +1,17 @@
 module Util.Args where
 
 import Data.Monoid
+import System.Exit (exitFailure, exitSuccess)
+import System.IO (stderr, hPutStrLn)
 import Control.Arrow
 import qualified Control.Category as C
 import Data.Maybe (fromMaybe)
 import System.Environment (getProgName)
+import Util.WordWrap (wordWrap)
+import Debug.Trace
+import Data.Function (on)
+import Data.List(sortBy)
+import System.Environment (getArgs)
 
 {-# ANN module "HLint: ignore Use String" #-}
 data Args = Args { switches :: [String]
@@ -55,6 +62,12 @@ type KnownArgs = [ArgDescr]
 
 data ArgArrow a b = ArgArrow KnownArgs (Args -> a -> IO b)
 
+data ArgParseResult a = Usage
+                      | Help
+                      | Error String
+                      | OK a
+    deriving (Show, Eq)
+
 runArgArrow :: Args -> ArgArrow () a -> IO a
 runArgArrow args (ArgArrow _ m) = m args ()
 
@@ -67,22 +80,40 @@ showFlagDescr argDescr = zipWith makeLine lefts msgLines
           argLine  = case argDescr of
                        Switch name _ -> "--" ++ name
                        ValArg name tmpl _ _ -> concat ["--", name, "=", tmpl]
-          msgLines = lines $ case argDescr of
-                               Switch _ hlp -> hlp
-                               ValArg _ _ default' help ->
-                                   concat [help, "\n", defaultsLine default']
+          msgLines = wordWrap 60 $ case argDescr of
+                                     Switch _ hlp -> hlp
+                                     ValArg _ _ default' help ->
+                                         concat [help, "\n", defaultsLine default']
           defaultsLine (ConstValue s) = concat ["(defaults to '", s, "')"]
           defaultsLine (DynValue s)   = concat ["(defaults to ", s, ")"]
           makeLine infoLine descrLine = (infoLine `padTo` 20) ++ descrLine
 
-usage :: ArgArrow a b -> IO String
-usage (ArgArrow args _) = do
+helperArgArrow :: ArgArrow a b -> ArgArrow a (ArgParseResult b)
+helperArgArrow (ArgArrow knargs m) = ArgArrow knargs' m'
+    where knargs' = Switch "help" "Show this help message" : knargs
+          m' args x | "help" `elem` switches args = return Help
+                    | "usage" `elem` switches args = return Usage
+                    | otherwise = OK `fmap` m args x
+
+parseArgs :: ArgArrow () a -> String -> String -> IO a
+parseArgs arr version outro = do
+  args   <- getArgs
+  result <- runArgArrow (parseArguments args) arr'
+  case result of
+    OK a -> return a
+    Error s -> hPutStrLn stderr s >> exitFailure
+    _ -> usage arr' version outro >>= putStr >> exitSuccess
+  where arr' = helperArgArrow arr
+
+
+usage :: ArgArrow a b -> String -> String -> IO String
+usage (ArgArrow args _) version outro = do
   self <- getProgName
   let intro = "usage: " ++ self ++ " [FLAGS]"
-  return $ unlines $ [intro, "", "Flags:"] ++ flagsDescr ++ ["", outro1, outro2]
-      where outro1 = undefined
-            outro2 = undefined
-            flagsDescr = concatMap showFlagDescr args
+  return $ unlines $ [intro, "", "Flags:"] ++ flagsDescr ++ [""] ++  outro'
+      where flagsDescr = concatMap showFlagDescr $ argDescrSort args
+            argDescrSort = sortBy (compare `on` argName)
+            outro' = wordWrap 80 outro
 
 
 -- TODO: check if info/descriptions match

@@ -1,5 +1,3 @@
-{-# LANGUAGE StandaloneDeriving #-}
-import System.Environment (getArgs)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure)
 import System.FilePath ((</>))
@@ -8,33 +6,21 @@ import Types
 import MyMonad
 import Actions
 import SanityCheck (sanityCheck)
-import Args (usage, parseArgs)
-
-deriving instance Show GhcSource
-deriving instance Show Verbosity
-deriving instance Show Options
+import Args (getArgs)
 
 main :: IO ()
 main = do
-    args <- getArgs
-    case args of
-      ["--version"] -> putStrLn "0.2"
-      ["--help"] -> usage
-      ["-h"]     -> usage
-      _          ->
-          do
-            options <- parseArgs args
-            print options
-            -- (result, messageLog) <- runMyMonad realMain options
-            -- case result of
-            --   Left err -> do
-            --     hPutStrLn stderr $ getExceptionMessage err
-            --     hPutStrLn stderr ""
-            --     hPutStrLn stderr "hsenv.log file contains detailed description of the process."
-            --     let errorLog = unlines $ messageLog ++ ["", getExceptionMessage err]
-            --     writeFile "hsenv.log" errorLog
-            --     exitFailure
-            --   Right ()  -> writeFile (".hsenv" </> "hsenv.log") $ unlines messageLog
+  options <- getArgs
+  (result, messageLog) <- runMyMonad realMain options
+  case result of
+    Left err -> do
+                hPutStrLn stderr $ getExceptionMessage err
+                hPutStrLn stderr ""
+                hPutStrLn stderr "hsenv.log file contains detailed description of the process."
+                let errorLog = unlines $ messageLog ++ ["", getExceptionMessage err]
+                writeFile "hsenv.log" errorLog
+                exitFailure
+    Right ()  -> writeFile (".hsenv" </> "hsenv.log") $ unlines messageLog
 
 realMain :: MyMonad ()
 realMain = do
