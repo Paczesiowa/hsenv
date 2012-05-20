@@ -52,9 +52,9 @@ data DefaultValue = ConstValue String
                   | DynValue String
     deriving (Show, Eq)
 
-data ArgDescr = Switch { argName :: String
-                       , helpMsg :: String
-                       }
+data ArgDescr = SwitchDescr { argName :: String
+                            , helpMsg :: String
+                            }
               | ValArg { argName      :: String
                        , valTemplate  :: String
                        , defaultValue :: DefaultValue
@@ -82,10 +82,10 @@ showFlagDescr :: ArgDescr -> [String]
 showFlagDescr argDescr = zipWith makeLine lefts msgLines
     where lefts    = [argLine] ++ repeat ""
           argLine  = case argDescr of
-                       Switch name _ -> "--" ++ name
+                       SwitchDescr name _ -> "--" ++ name
                        ValArg name tmpl _ _ -> concat ["--", name, "=", tmpl]
           msgLines = wordWrap 60 $ case argDescr of
-                                     Switch _ hlp -> hlp
+                                     SwitchDescr _ hlp -> hlp
                                      ValArg _ _ default' help ->
                                          concat [help, "\n", defaultsLine default']
           defaultsLine (ConstValue s) = concat ["(defaults to '", s, "')"]
@@ -94,7 +94,7 @@ showFlagDescr argDescr = zipWith makeLine lefts msgLines
 
 helperArgArrow :: ArgArrow a b -> ArgArrow a (ArgParseResult b)
 helperArgArrow (ArgArrow knargs m) = ArgArrow knargs' m'
-    where knargs' = Switch "help" "Show this help message" : knargs
+    where knargs' = SwitchDescr "help" "Show this help message" : knargs
           m' args x | "help" `elem` switches args = return Help
                     | "usage" `elem` switches args = return Usage
                     | otherwise = OK `fmap` m args x
@@ -145,49 +145,44 @@ instance ArrowChoice ArgArrow where
 liftIO :: (a -> IO b) -> ArgArrow a b
 liftIO m = ArgArrow [] $ \_ x -> m x
 
-liftIO' :: IO a -> ArgArrow () a
-liftIO' m = ArgArrow [] $ \_ _ -> m
+class GetOpt a b | a -> b where
+    getOpt :: a -> ArgArrow () b
 
-class Foo a b | a -> b where
-    get :: a -> ArgArrow () b
+data Switch = Switch { switchName :: String
+                     , switchHelp :: String
+                     }
 
-data SwitchDescription = SwitchDescription { switchName :: String
-                                           , switchHelp :: String
-                                           }
-
-instance Foo SwitchDescription Bool where
-    get sd = ArgArrow knArgs m
+instance GetOpt Switch Bool where
+    getOpt sd = ArgArrow knArgs m
         where m args _ = return $ switchName sd `elem` switches args
-              knArgs   = [Switch (switchName sd) (switchHelp sd)]
+              knArgs   = [SwitchDescr (switchName sd) (switchHelp sd)]
 
-data DynamicOptionDescription =
-    DynamicOptionDescription { dynamicOptionName        :: String
-                            , dynamicOptionTemplate    :: String
-                            , dynamicOptionDescription :: String
-                            , dynamicOptionHelp        :: String
-                            }
+data DynOpt = DynOpt { dynOptName        :: String
+                     , dynOptTemplate    :: String
+                     , dynOptDescription :: String
+                     , dynOptHelp        :: String
+                     }
 
-instance Foo DynamicOptionDescription (Maybe String) where
-    get dod = ArgArrow knArgs m
-        where knArgs = [ValArg (dynamicOptionName dod)
-                               (dynamicOptionTemplate dod)
-                               (DynValue $ dynamicOptionDescription dod)
-                               (dynamicOptionHelp dod)]
-              m args _ = return $ lookup (dynamicOptionName dod) $ valArgs args
+instance GetOpt DynOpt (Maybe String) where
+    getOpt dod = ArgArrow knArgs m
+        where knArgs = [ValArg (dynOptName dod)
+                               (dynOptTemplate dod)
+                               (DynValue $ dynOptDescription dod)
+                               (dynOptHelp dod)]
+              m args _ = return $ lookup (dynOptName dod) $ valArgs args
 
-data StaticOptionDescription =
-    StaticOptionDescription { staticOptionName     :: String
-                            , staticOptionTemplate :: String
-                            , staticOptionDefault  :: String
-                            , staticOptionHelp     :: String
-                            }
+data StaticOpt = StaticOpt { staticOptName     :: String
+                           , staticOptTemplate :: String
+                           , staticOptDefault  :: String
+                           , staticOptHelp     :: String
+                           }
 
-instance Foo StaticOptionDescription String where
-    get sod = ArgArrow knArgs m
-        where knArgs = [ValArg (staticOptionName sod)
-                               (staticOptionTemplate sod)
-                               (DynValue $ staticOptionDefault sod)
-                               (staticOptionHelp sod)]
-              m args _ = return $ fromMaybe (staticOptionDefault sod)
-                                $ lookup (staticOptionName sod)
+instance GetOpt StaticOpt String where
+    getOpt sod = ArgArrow knArgs m
+        where knArgs = [ValArg (staticOptName sod)
+                               (staticOptTemplate sod)
+                               (DynValue $ staticOptDefault sod)
+                               (staticOptHelp sod)]
+              m args _ = return $ fromMaybe (staticOptDefault sod)
+                                $ lookup (staticOptName sod)
                                 $ valArgs args
