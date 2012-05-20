@@ -1,3 +1,8 @@
+{-# Language MultiParamTypeClasses
+  , FunctionalDependencies
+  , FlexibleInstances
+  #-}
+
 module Util.Args where
 
 import Data.Monoid
@@ -8,7 +13,6 @@ import qualified Control.Category as C
 import Data.Maybe (fromMaybe)
 import System.Environment (getProgName)
 import Util.WordWrap (wordWrap)
-import Debug.Trace
 import Data.Function (on)
 import Data.List(sortBy)
 import System.Environment (getArgs)
@@ -96,14 +100,14 @@ helperArgArrow (ArgArrow knargs m) = ArgArrow knargs' m'
                     | otherwise = OK `fmap` m args x
 
 parseArgs :: ArgArrow () a -> String -> String -> IO a
-parseArgs arr version outro = do
+parseArgs arrgArr version outro = do
   args   <- getArgs
-  result <- runArgArrow (parseArguments args) arr'
+  result <- runArgArrow (parseArguments args) arrgArr'
   case result of
     OK a -> return a
     Error s -> hPutStrLn stderr s >> exitFailure
-    _ -> usage arr' version outro >>= putStr >> exitSuccess
-  where arr' = helperArgArrow arr
+    _ -> usage arrgArr' version outro >>= putStr >> exitSuccess
+  where arrgArr' = helperArgArrow arrgArr
 
 
 usage :: ArgArrow a b -> String -> String -> IO String
@@ -138,23 +142,52 @@ instance ArrowChoice ArgArrow where
               Left y  -> Left `fmap` m s y
               Right y -> return $ Right y
 
-getSwitch :: String -> String -> ArgArrow () Bool
-getSwitch name info = ArgArrow knArgs m
-    where m args _ = return $ name `elem` switches args
-          knArgs   = [Switch name info]
-
-getOptionWithDefault :: String -> String -> String -> String -> ArgArrow () String
-getOptionWithDefault name template default' info = ArgArrow knArgs m
-    where knArgs = [ValArg name template (ConstValue default') info]
-          m args _ = return $ fromMaybe default' $ lookup name $ valArgs args
-
-getOptionWithDefault2 :: String -> String -> String -> String -> ArgArrow () (Maybe String)
-getOptionWithDefault2 name template defaultStr info = ArgArrow knArgs m
-    where knArgs = [ValArg name template (DynValue defaultStr) info]
-          m args _ = return $ lookup name $ valArgs args
-
 liftIO :: (a -> IO b) -> ArgArrow a b
 liftIO m = ArgArrow [] $ \_ x -> m x
 
 liftIO' :: IO a -> ArgArrow () a
 liftIO' m = ArgArrow [] $ \_ _ -> m
+
+class Foo a b | a -> b where
+    get :: a -> ArgArrow () b
+
+data SwitchDescription = SwitchDescription { switchName :: String
+                                           , switchHelp :: String
+                                           }
+
+instance Foo SwitchDescription Bool where
+    get sd = ArgArrow knArgs m
+        where m args _ = return $ switchName sd `elem` switches args
+              knArgs   = [Switch (switchName sd) (switchHelp sd)]
+
+data DynamicOptionDescription =
+    DynamicOptionDescription { dynamicOptionName        :: String
+                            , dynamicOptionTemplate    :: String
+                            , dynamicOptionDescription :: String
+                            , dynamicOptionHelp        :: String
+                            }
+
+instance Foo DynamicOptionDescription (Maybe String) where
+    get dod = ArgArrow knArgs m
+        where knArgs = [ValArg (dynamicOptionName dod)
+                               (dynamicOptionTemplate dod)
+                               (DynValue $ dynamicOptionDescription dod)
+                               (dynamicOptionHelp dod)]
+              m args _ = return $ lookup (dynamicOptionName dod) $ valArgs args
+
+data StaticOptionDescription =
+    StaticOptionDescription { staticOptionName     :: String
+                            , staticOptionTemplate :: String
+                            , staticOptionDefault  :: String
+                            , staticOptionHelp     :: String
+                            }
+
+instance Foo StaticOptionDescription String where
+    get sod = ArgArrow knArgs m
+        where knArgs = [ValArg (staticOptionName sod)
+                               (staticOptionTemplate sod)
+                               (DynValue $ staticOptionDefault sod)
+                               (staticOptionHelp sod)]
+              m args _ = return $ fromMaybe (staticOptionDefault sod)
+                                $ lookup (staticOptionName sod)
+                                $ valArgs args
