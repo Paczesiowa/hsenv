@@ -11,16 +11,19 @@ import Paths_hsenv (version)
 
 verbosityOpt, veryVerbosityOpt, skipSanityOpt :: Switch
 
-verbosityOpt = Switch { switchName = "verbose"
-                      , switchHelp = "Print some debugging info"
+verbosityOpt = Switch { switchName  = "verbose"
+                      , switchHelp  = "Print some debugging info"
+                      , switchShort = Just 'v'
                       }
 
-veryVerbosityOpt = Switch { switchName = "very-verbose"
-                          , switchHelp = "Print some more debugging info"
+veryVerbosityOpt = Switch { switchName  = "very-verbose"
+                          , switchHelp  = "Print some more debugging info"
+                          , switchShort = Nothing
                           }
 
-skipSanityOpt = Switch { switchName = "skip-sanity-check"
-                       , switchHelp = "Skip all the sanity checks (use at your own risk)"
+skipSanityOpt = Switch { switchName  = "skip-sanity-check"
+                       , switchHelp  = "Skip all the sanity checks (use at your own risk)"
+                       , switchShort = Nothing
                        }
 
 nameOpt, ghcOpt :: DynOpt
