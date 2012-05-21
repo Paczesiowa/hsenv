@@ -15,15 +15,20 @@ import Control.Arrow
 class GetOpt a b | a -> b where
     getOpt :: a -> ArgArrow () b
 
-data Switch = Switch { switchName :: String
-                     , switchHelp :: String
+data Switch = Switch { switchName  :: String
+                     , switchHelp  :: String
+                     , switchShort :: Maybe Char
                      }
 
 instance GetOpt Switch Bool where
     getOpt sd = proc () -> do
-      addKnownArg [SwitchDescr (switchName sd) (switchHelp sd)] -< ()
+      addKnownArg [SwitchDescr (switchName sd) (switchHelp sd) (switchShort sd)] -< ()
       args <- askArgs -< ()
-      returnA -< switchName sd `elem` switches args
+      let longSwitchStatus = switchName sd `elem` switches args
+          switchStatus = case switchShort sd of
+                           Nothing -> longSwitchStatus
+                           Just c  -> longSwitchStatus || c `elem` shortSwitches args
+      returnA -< switchStatus
 
 data DynOpt = DynOpt { dynOptName        :: String
                      , dynOptTemplate    :: String

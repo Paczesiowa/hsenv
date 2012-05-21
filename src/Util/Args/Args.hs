@@ -18,10 +18,12 @@ showFlagDescr :: ArgDescr -> [String]
 showFlagDescr argDescr = zipWith makeLine lefts msgLines
     where lefts    = argLine : repeat ""
           argLine  = case argDescr of
-                       SwitchDescr name _ -> "--" ++ name
+                       SwitchDescr name _ Nothing -> "--" ++ name
+                       SwitchDescr name _ (Just c) ->
+                           concat ["-", [c], " ", "--", name]
                        ValArg name tmpl _ _ -> concat ["--", name, "=", tmpl]
           msgLines = wordWrap 60 $ case argDescr of
-                                     SwitchDescr _ hlp -> hlp
+                                     SwitchDescr _ hlp _ -> hlp
                                      ValArg _ _ default' help ->
                                          concat [help, "\n", defaultsLine default']
           defaultsLine (ConstValue s) = concat ["(defaults to '", s, "')"]
@@ -48,8 +50,8 @@ helperArgArrow arrow = proc x -> do
    else
     arrow >>> arr OK -< x
     where knargs = [versionOpt, helpOpt]
-          helpOpt = SwitchDescr "help" "Show this help message"
-          versionOpt = SwitchDescr "version" "Show version string"
+          helpOpt = SwitchDescr "help" "Show this help message" (Just 'h')
+          versionOpt = SwitchDescr "version" "Show version string" Nothing
 
 parseArgs :: ArgArrow () a -> String -> String -> IO a
 parseArgs arrgArr version outro = do

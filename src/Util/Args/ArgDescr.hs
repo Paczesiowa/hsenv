@@ -4,8 +4,9 @@ data DefaultValue = ConstValue String
                   | DynValue String
     deriving (Show, Eq)
 
-data ArgDescr = SwitchDescr { argName :: String
-                            , helpMsg :: String
+data ArgDescr = SwitchDescr { argName  :: String
+                            , helpMsg  :: String
+                            , shortOpt :: Maybe Char
                             }
               | ValArg { argName      :: String
                        , valTemplate  :: String
