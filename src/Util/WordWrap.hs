@@ -20,7 +20,7 @@ wordWrap maxLen line =
 wordWrap' :: Int -> String -> [String]
 wordWrap' maxLen line
   | length line <= maxLen = [trim line]
-  | any isSpace beforeMax = trim beforeSpace : (wordWrap maxLen $ afterSpace ++ afterMax)
+  | any isSpace beforeMax = trim beforeSpace : wordWrap maxLen (afterSpace ++ afterMax)
   | otherwise = firstBigWord : wordWrap maxLen rest
     where (beforeMax, afterMax) = splitAt maxLen line
           (beforeSpace, afterSpace) = reverseBreak isSpace beforeMax

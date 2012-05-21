@@ -8,16 +8,15 @@ import Util.Args.StaticArrow
 import Util.WordWrap
 import Util.String
 import Control.Arrow
-import System.Environment (getArgs)
+import System.Environment (getArgs, getProgName)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure, exitSuccess)
-import System.Environment (getProgName)
 import Data.Function (on)
 import Data.List(sortBy)
 
 showFlagDescr :: ArgDescr -> [String]
 showFlagDescr argDescr = zipWith makeLine lefts msgLines
-    where lefts    = [argLine] ++ repeat ""
+    where lefts    = argLine : repeat ""
           argLine  = case argDescr of
                        SwitchDescr name _ -> "--" ++ name
                        ValArg name tmpl _ _ -> concat ["--", name, "=", tmpl]

@@ -4,7 +4,6 @@ module Util.Args.ArgArrow where
 import Util.Args.StaticArrow
 import Util.Args.RawArgs
 import Util.Args.ArgDescr
-import Control.Arrow
 import Data.Monoid (mempty)
 import Control.Monad.Reader hiding (liftIO)
 import qualified Control.Monad.Reader as Reader (liftIO)
@@ -15,7 +14,7 @@ newtype ArgArrow a b = ArgArrow (StaticArrowT KnownArgs (Kleisli (ReaderT Args I
     deriving (Category, Arrow, ArrowChoice)
 
 runArgArrow :: ArgArrow () a -> Args -> IO a
-runArgArrow (ArgArrow (StaticArrowT _ m)) args = runReaderT (runKleisli m ()) args
+runArgArrow (ArgArrow (StaticArrowT _ m)) = runReaderT $ runKleisli m ()
 
 liftIO :: (a -> IO b) -> ArgArrow a b
 liftIO m = ArgArrow $ StaticArrowT mempty $ Kleisli (Reader.liftIO . m)
