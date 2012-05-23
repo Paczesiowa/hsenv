@@ -8,6 +8,10 @@ import Util.Args.ArgArrow (ArgArrow, getKnownArgs)
 import Util.String (padTo)
 import System.Environment (getProgName)
 
+-- pretty prints cli arg description for usage
+-- left column contains cli arg header (e.g. '--verbose', or '--binary=PATH')
+-- right column contains info messages for that argument
+-- returns list of lines
 showFlagDescr :: ArgDescr -> [String]
 showFlagDescr argDescr = zipWith makeLine lefts msgLines
     where lefts    = argLine : repeat ""
@@ -24,6 +28,9 @@ showFlagDescr argDescr = zipWith makeLine lefts msgLines
           defaultsLine (DynValue s)   = concat ["(defaults to ", s, ")"]
           makeLine infoLine descrLine = (infoLine `padTo` 20) ++ descrLine
 
+-- returns string with formatted cli arg usage help message
+-- argument descriptions are extracted from arg parsing computation
+-- adds simple header and appends provided footer
 usage :: ArgArrow a b -> String -> IO String
 usage arrow outro = do
   self <- getProgName
