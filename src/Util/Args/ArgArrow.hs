@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Util.Args.ArgArrow where
 
-import Util.Args.StaticArrow
+import Util.Args.StaticArrowT
 import Util.Args.RawArgs
 import Util.Args.ArgDescr
 import Data.Monoid (mempty)

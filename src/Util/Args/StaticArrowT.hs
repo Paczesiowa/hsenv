@@ -1,9 +1,14 @@
-module Util.Args.StaticArrow where
+module Util.Args.StaticArrowT ( StaticArrowT(..)
+                              , addStatic
+                              , getStatic
+                              ) where
 
-import Data.Monoid
-import Control.Arrow
+import Data.Monoid (Monoid(..))
+import Control.Arrow (Arrow(..), ArrowChoice(..))
 import qualified Control.Category as C
 
+-- arrow transformer, that adds static information
+-- to underlying computation
 data StaticArrowT m arr a b = StaticArrowT m (arr a b)
 
 instance (C.Category arr, Monoid m) => C.Category (StaticArrowT m arr) where
@@ -13,13 +18,16 @@ instance (C.Category arr, Monoid m) => C.Category (StaticArrowT m arr) where
 
 instance (Arrow arr, Monoid m) => Arrow (StaticArrowT m arr) where
   arr f = StaticArrowT mempty $ arr f
-  first (StaticArrowT m arr) = StaticArrowT m $ first arr
+  first (StaticArrowT m arrow) = StaticArrowT m $ first arrow
 
 instance (ArrowChoice arr, Monoid m) => ArrowChoice (StaticArrowT m arr) where
-    left (StaticArrowT m arr) = StaticArrowT m $ left arr
+    left (StaticArrowT m arrow) = StaticArrowT m $ left arrow
 
+-- simplest computation with specified static information
 addStatic :: (Monoid m, Arrow arr) => m -> StaticArrowT m arr a a
 addStatic m = StaticArrowT m C.id
 
+-- returns static information from the whole computation
+-- (without running it)
 getStatic :: (Monoid m, Arrow arr) => StaticArrowT m arr a b -> m
 getStatic (StaticArrowT m _) = m

@@ -4,7 +4,7 @@ module Util.Args.Args where
 import Util.Args.ArgDescr
 import Util.Args.ArgArrow
 import Util.Args.RawArgs
-import Util.Args.StaticArrow
+import Util.Args.StaticArrowT
 import Util.WordWrap
 import Util.String
 import Control.Arrow
