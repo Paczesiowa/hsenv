@@ -13,6 +13,7 @@ import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure, exitSuccess)
 import Data.Function (on)
 import Data.List(sortBy)
+import Data.Maybe
 
 showFlagDescr :: ArgDescr -> [String]
 showFlagDescr argDescr = zipWith makeLine lefts msgLines
@@ -53,15 +54,38 @@ helperArgArrow arrow = proc x -> do
           helpOpt = SwitchDescr "help" "Show this help message" (Just 'h')
           versionOpt = SwitchDescr "version" "Show version string" Nothing
 
+failWith :: String -> IO a
+failWith s = hPutStrLn stderr s >> exitFailure
+
+validateArguments :: Args -> KnownArgs -> IO ()
+validateArguments args knArgs
+    | not $ null $ positionals args = failWith "Positional arguments are not allowed"
+    | otherwise =
+        either failWith return $
+               checkUnknownArguments args knShortSwitches knSwitches knKeys
+    where knShortSwitches = catMaybes $ flip map knArgs $ \x -> case x of
+                               SwitchDescr _ _ c -> c
+                               _ -> Nothing
+          knSwitches = catMaybes $ flip map knArgs $ \x -> case x of
+                               SwitchDescr x _ _ -> Just x
+                               _ -> Nothing
+          knKeys = catMaybes $ flip map knArgs $ \x -> case x of
+                               ValArg x _ _ _ -> Just x
+                               _ -> Nothing
+
 parseArgs :: ArgArrow () a -> String -> String -> IO a
 parseArgs arrgArr version outro = do
-  args   <- getArgs
-  result <- runArgArrow arrgArr' (parseArguments args)
-  case result of
-    OK a -> return a
-    Error s -> hPutStrLn stderr s >> exitFailure
-    Version -> putStrLn version >> exitSuccess
-    _ -> usage arrgArr' outro >>= putStr >> exitSuccess
+  args <- getArgs
+  case parseArguments args of
+    Left s -> failWith s
+    Right parsedArgs -> do
+      validateArguments parsedArgs $ getKnownArgs arrgArr'
+      result <- runArgArrow arrgArr' parsedArgs
+      case result of
+        OK a -> return a
+        Error s -> failWith s
+        Version -> putStrLn version >> exitSuccess
+        _ -> usage arrgArr' outro >>= putStr >> exitSuccess
   where arrgArr' = helperArgArrow arrgArr
 
 
