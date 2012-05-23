@@ -7,7 +7,7 @@ module Util.Args.ArgArrow ( ArgArrow
                           , getKnownArgs
                           ) where
 
-import Util.Args.StaticArrowT (StaticArrowT(..), addStatic, getStatic)
+import Util.StaticArrowT (StaticArrowT(..), addStatic, getStatic)
 import Util.Args.RawArgs (Args)
 import Util.Args.ArgDescr (KnownArgs)
 import Data.Monoid (mempty)

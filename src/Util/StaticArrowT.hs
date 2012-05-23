@@ -1,7 +1,7 @@
-module Util.Args.StaticArrowT ( StaticArrowT(..)
-                              , addStatic
-                              , getStatic
-                              ) where
+module Util.StaticArrowT ( StaticArrowT(..)
+                         , addStatic
+                         , getStatic
+                         ) where
 
 import Data.Monoid (Monoid(..))
 import Control.Arrow (Arrow(..), ArrowChoice(..))
