@@ -1,35 +1,18 @@
 {-# LANGUAGE Arrows #-}
-module Util.Args.Args where
+module Util.Args.Args (parseArgs) where
 
-import Util.Args.ArgDescr
-import Util.Args.ArgArrow
-import Util.Args.RawArgs
-import Util.StaticArrowT
-import Util.WordWrap
-import Util.String
-import Control.Arrow
+import Util.Args.ArgDescr (ArgDescr(..), DefaultValue(..), KnownArgs)
+import Util.Args.ArgArrow (ArgArrow, runArgArrow, askArgs, getKnownArgs, addKnownArg)
+import Util.Args.RawArgs (Args(..), parseArguments)
+import Util.WordWrap (wordWrap)
+import Util.String (padTo)
+import Control.Arrow ((>>>), returnA, arr)
 import System.Environment (getArgs, getProgName)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure, exitSuccess)
-import Data.Function (on)
 import Data.List(sortBy)
-import Data.Maybe
-
-showFlagDescr :: ArgDescr -> [String]
-showFlagDescr argDescr = zipWith makeLine lefts msgLines
-    where lefts    = argLine : repeat ""
-          argLine  = case argDescr of
-                       SwitchDescr name _ Nothing -> "--" ++ name
-                       SwitchDescr name _ (Just c) ->
-                           concat ["-", [c], " ", "--", name]
-                       ValArg name tmpl _ _ -> concat ["--", name, "=", tmpl]
-          msgLines = wordWrap 60 $ case argDescr of
-                                     SwitchDescr _ hlp _ -> hlp
-                                     ValArg _ _ default' help ->
-                                         concat [help, "\n", defaultsLine default']
-          defaultsLine (ConstValue s) = concat ["(defaults to '", s, "')"]
-          defaultsLine (DynValue s)   = concat ["(defaults to ", s, ")"]
-          makeLine infoLine descrLine = (infoLine `padTo` 20) ++ descrLine
+import Data.Maybe (catMaybes)
+import Util.Args.Usage (usage)
 
 data ArgParseResult a = Usage
                       | Help
@@ -87,16 +70,6 @@ parseArgs arrgArr version outro = do
         Version -> putStrLn version >> exitSuccess
         _ -> usage arrgArr' outro >>= putStr >> exitSuccess
   where arrgArr' = helperArgArrow arrgArr
-
-
-usage :: ArgArrow a b -> String -> IO String
-usage arrow outro = do
-  self <- getProgName
-  let intro = "usage: " ++ self ++ " [FLAGS]"
-  return $ unlines $ [intro, "", "Flags:"] ++ flagsDescr ++ [""] ++  outro'
-      where flagsDescr = concatMap showFlagDescr $ argDescrSort $ getKnownArgs arrow
-            argDescrSort = sortBy (compare `on` argName)
-            outro' = wordWrap 80 outro
 
 checkUnknownArguments :: Args -> [Char] -> [String] -> [String] -> Either String ()
 checkUnknownArguments args knownShortSwitches knownSwitches knownKeys = do
