@@ -97,3 +97,14 @@ usage arrow outro = do
       where flagsDescr = concatMap showFlagDescr $ argDescrSort $ getKnownArgs arrow
             argDescrSort = sortBy (compare `on` argName)
             outro' = wordWrap 80 outro
+
+checkUnknownArguments :: Args -> [Char] -> [String] -> [String] -> Either String ()
+checkUnknownArguments args knownShortSwitches knownSwitches knownKeys = do
+  mapM_ (validate "short switch" "-" knownShortSwitches (:"")) $ shortSwitches args
+  mapM_ (validate "switch" "--" knownSwitches id) $ switches args
+  mapM_ (validate "option" "--" knownKeys id) $ map fst $ valArgs args
+    where validate xName prefix knownXs showX x =
+              if x `elem` knownXs then
+                  Right ()
+              else
+                  Left $ "Unknown " ++ xName ++ " '" ++ prefix ++ showX x ++ "'"
