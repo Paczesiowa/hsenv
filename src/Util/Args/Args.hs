@@ -25,7 +25,7 @@ helperArgArrow :: ArgArrow a b -> ArgArrow a (ArgParseResult b)
 helperArgArrow arrow = proc x -> do
   addKnownArg knargs -< ()
   args <- askArgs -< ()
-  if "help" `elem` switches args then
+  if "help" `elem` switches args || 'h' `elem` shortSwitches args then
     returnA -< Help
    else if "usage" `elem` switches args then
     returnA -< Usage
