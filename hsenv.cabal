@@ -96,6 +96,8 @@ Executable hsenv
 
   Hs-source-dirs: src
 
+  cpp-options: -Dcabal
+
   Ghc-options: -threaded -Wall
 
   Build-depends: base >= 4.2.0.0 && < 4.6

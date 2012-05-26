@@ -1,4 +1,4 @@
-{-# LANGUAGE Arrows #-}
+{-# LANGUAGE Arrows, CPP #-}
 
 module Args (getArgs) where
 
@@ -7,7 +7,17 @@ import Util.Args
 import System.Directory (getCurrentDirectory)
 import System.FilePath (splitPath)
 import Types
+
+#ifdef cabal
+import Util.Cabal (prettyVersion)
 import Paths_hsenv (version)
+
+versionString :: String
+versionString = prettyVersion version
+#else
+versionString :: String
+versionString = "dev"
+#endif
 
 verbosityOpt, veryVerbosityOpt, skipSanityOpt :: Switch
 
@@ -81,6 +91,6 @@ argParser = proc () -> do
     where liftIO' = liftIO . const
 
 getArgs :: IO Options
-getArgs = parseArgs argParser version outro
+getArgs = parseArgs argParser versionString outro
     where outro = "Creates Virtual Haskell Environment in the current directory.\n"
                   ++ "All files will be stored in the .hsenv_ENVNAME/ subdirectory."
