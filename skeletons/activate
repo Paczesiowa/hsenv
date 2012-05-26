@@ -1,8 +1,9 @@
 if [ -n "${HSENV}" ]; then
-    if [ "<HSENV>" = "${HSENV}" ]; then
+    if [ "<HSENV>" = "${HSENV}" -a "<HSENV_NAME>" = "${HSENV_NAME}" ]; then
         echo "${HSENV_NAME} Virtual Haskell Environment is already active."
     else
         echo "There is already ${HSENV_NAME} Virtual Haskell Environment activated."
+        echo "(at ${HSENV})"
         echo "Deactivate it first (using command 'deactivate'), to activate"
         echo "<HSENV_NAME> environment."
     fi

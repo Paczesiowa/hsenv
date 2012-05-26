@@ -6,7 +6,7 @@ import System.Directory (doesDirectoryExist)
 import Util.IO (getEnvVar, which)
 import Types
 import MyMonad
-import Paths (hseDirStructure)
+import Paths (hseDirStructure, dotDirName)
 
 -- check if any virtual env is already active
 checkHSE :: MyMonad ()
@@ -18,7 +18,7 @@ checkHSE = do
             hsEnvNameVar <- liftIO $ getEnvVar "HSENV_NAME"
             case hsEnvNameVar of
                 Nothing -> do
-                       debug $ "warning: HSENV environment variable is defined" ++ ", but no VIRHTUALENV_NAME environment variable defined."
+                       debug $ "warning: HSENV environment variable is defined" ++ ", but no HSENV_NAME environment variable defined."
                        throwError $ MyException $ "There is already active Virtual Haskell Environment (at " ++ path ++ ")."
                 Just name ->
                     throwError $ MyException $ "There is already active " ++ name ++ " Virtual Haskell Environment (at " ++ path ++ ")."
@@ -27,7 +27,8 @@ checkHsenvAlreadyExists :: MyMonad ()
 checkHsenvAlreadyExists = do
   dirStructure <- hseDirStructure
   flag         <- liftIO $ doesDirectoryExist $ hsEnvDir dirStructure
-  when flag $ throwError $ MyException $ "There is already .hsenv directory at " ++ hsEnv dirStructure
+  dotDir       <- dotDirName
+  when flag $ throwError $ MyException $ "There is already " ++ dotDir ++ " directory at " ++ hsEnv dirStructure
 
 -- check if cabal binary exist on PATH
 checkCabalInstall :: MyMonad ()

@@ -6,7 +6,7 @@ Synopsis:            Virtual Haskell Environment builder
 
 Description:         hsenv is a tool (inspired by Python's virtualenv) to create isolated Haskell environments.
                      .
-                     It creates a sandboxed environment in a .hsenv/ directory, which, when activated,
+                     It creates a sandboxed environment in a .hsenv_<ENVIRONMENT_NAME>/ directory, which, when activated,
                      allows you to use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haskell
                      code and environment. It's possible to create an environment, that uses different GHC version
                      than your currently installed. hsenv is supposed to be easier to learn (and use) than
@@ -27,7 +27,7 @@ Description:         hsenv is a tool (inspired by Python's virtualenv) to create
                      .
                      Now, every time you want to use this enviroment, you have to activate it:
                      .
-                     > source .hsenv/bin/activate
+                     > source .hsenv_foo/bin/activate
                      .
                      That's it! Now it's possible to use all regular Haskell tools like usual, but it won't affect
                      your global/system's Haskell environment, and also your per-user environment (from ~/.cabal and

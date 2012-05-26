@@ -9,7 +9,7 @@ to create isolated Haskell environments.
 
 What does it do?
 ----------------
-It creates a sandboxed environment in a .hsenv/ sub-directory
+It creates a sandboxed environment in a .hsenv_<ENVIRONMENT_NAME>/ sub-directory
 of your project, which, when activated, allows you to use regular Haskell tools
 (ghc, ghci, ghc-pkg, cabal) to manage your Haskell code and environment.
 It's possible to create an environment, that uses different GHC version
@@ -32,7 +32,7 @@ Next, create your new isolated Haskell environment
 
 Now, every time you want to use this environment, you have to activate it:
 
-> source .hsenv/bin/activate
+> source .hsenv_foo/bin/activate
 
 That's it! Now it's possible to use all regular Haskell tools like usual,
 but it won't affect your global/system's Haskell environment, and also
@@ -69,7 +69,7 @@ Then, create a new environment using that GHC:
 
 Activate it:
 
-> source .hsenv/bin/activate
+> source .hsenv_test/bin/activate
 
 Download a copy of json library and your private version of parsec:
 
@@ -140,11 +140,11 @@ A: No, it should work with any POSIX-compliant shell. It's been tested with
    bash, bash --posix, dash, zsh and ksh.
 
 Q: Can I use it with a different haskell package repository than hackage?  
-A: Yes, just adjust the url in .hsenv/cabal/config file.
+A: Yes, just adjust the url in .hsenv_<ENVIRONMENT_NAME>/cabal/config file.
 
 Q: How do I remove the whole virtual environment?  
 A: If it's activated - 'deactivate' it. Then, delete
-   the .hsenv/ directory.
+   the .hsenv_<ENVIRONMENT_NAME>/ directory.
 
 Q: Is every environment completely separate from other environments and
    the system environment?  
@@ -152,3 +152,7 @@ A: Yes. The only (minor) exception is ghci history - there's only one
    per user history file. Also, if you alter your system's GHC, then
    virtual environments using system's GHC copy will probably break.
    Virtual environments using GHC from a tarball should continue to work.
+
+Q: Can I use multiple environments in the same directory (e.g. to test
+   my project against different ghc versions)?  
+A: Yes, just use different names for all the environments.

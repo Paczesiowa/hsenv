@@ -31,8 +31,9 @@ newtype MyException = MyException { getExceptionMessage :: String }
     deriving Error
 
 -- Only absolute paths!
-data DirStructure = DirStructure { hsEnv          :: FilePath -- dir containing .hsenv dir (usually dir with cabal project)
-                                 , hsEnvDir       :: FilePath -- .hsenv dir
+data DirStructure = DirStructure { hsEnv          :: FilePath -- dir containing .hsenv_ENVNAME dir
+                                                             -- (usually dir with cabal project)
+                                 , hsEnvDir       :: FilePath -- .hsenv_ENVNAME dir
                                  , ghcPackagePath :: FilePath -- file (<ghc-6.12) or dir (>=ghc-6.12) containing private GHC pkg db
                                  , cabalDir       :: FilePath -- directory with private cabal dir
                                  , cabalBinDir    :: FilePath -- cabal's bin/ dir (used in $PATH)

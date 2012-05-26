@@ -83,4 +83,4 @@ argParser = proc () -> do
 getArgs :: IO Options
 getArgs = parseArgs argParser version outro
     where outro = "Creates Virtual Haskell Environment in the current directory.\n"
-                  ++ "All files will be stored in the .hsenv/ subdirectory."
+                  ++ "All files will be stored in the .hsenv_ENVNAME/ subdirectory."

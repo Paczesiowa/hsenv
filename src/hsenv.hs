@@ -7,6 +7,7 @@ import MyMonad
 import Actions
 import SanityCheck (sanityCheck)
 import Args (getArgs)
+import Paths (dotDirName)
 
 main :: IO ()
 main = do
@@ -20,7 +21,9 @@ main = do
                 let errorLog = unlines $ messageLog ++ ["", getExceptionMessage err]
                 writeFile "hsenv.log" errorLog
                 exitFailure
-    Right ()  -> writeFile (".hsenv" </> "hsenv.log") $ unlines messageLog
+    Right ()  -> do
+                let dotDir = ".hsenv_" ++ hsEnvName options
+                writeFile (dotDir </> "hsenv.log") $ unlines messageLog
 
 realMain :: MyMonad ()
 realMain = do
@@ -38,4 +41,5 @@ realMain = do
   installCabalWrapper
   cabalUpdate
   info ""
-  info "To activate the new environment use 'source .hsenv/bin/activate'"
+  dotDir <- dotDirName
+  info $ "To activate the new environment use 'source " ++ dotDir ++ "/bin/activate'"

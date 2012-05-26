@@ -1,6 +1,7 @@
 module Paths ( hseDirStructure
              , cabalConfigLocation
              , getVirtualEnvironment
+             , dotDirName
              ) where
 
 import System.FilePath ((</>))
@@ -15,8 +16,9 @@ import MyMonad
 hseDirStructure :: MyMonad DirStructure
 hseDirStructure = do
   cwd <- liftIO getCurrentDirectory
+  dirName <- dotDirName
   let hsEnvLocation    = cwd
-      hsEnvDirLocation = hsEnvLocation </> ".hsenv"
+      hsEnvDirLocation = hsEnvLocation </> dirName
       cabalDirLocation = hsEnvDirLocation </> "cabal"
       ghcDirLocation   = hsEnvDirLocation </> "ghc"
   return DirStructure { hsEnv          = hsEnvLocation
@@ -28,6 +30,12 @@ hseDirStructure = do
                       , ghcDir         = ghcDirLocation
                       , ghcBinDir      = ghcDirLocation </> "bin"
                       }
+
+-- directory name of hsEnvDir
+dotDirName :: MyMonad String
+dotDirName = do
+  name <- asks hsEnvName
+  return $ ".hsenv_" ++ name
 
 -- returns location of cabal's config file inside virtual environment dir structure
 cabalConfigLocation :: MyMonad FilePath
