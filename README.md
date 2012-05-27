@@ -165,14 +165,14 @@ A: Yes. hsenv also overrides cabal with a wrapper, that will force using differe
 Q: Is it possible to activate an environment upon entering its directory?  
 A: Yes, if you really know what you're doing. Here's a snippet for bash:
 
-   > function precmd() {
-   >     if [[ -z $HSENV ]]; then
-   >         NUMBER_OF_ENVS=$(find . -maxdepth 1 -type d -name ".hsenv_*" | wc -l)
-   >         case ${NUMBER_OF_ENVS} in
-   >             "0") ;;
-   >             "1") source .hsenv_*/bin/activate;;
-   >             *) echo multiple environments, manual activaton required;;
-   >         esac
-   >     fi
-   > }
-   > export PROMPT_COMMAND=precmd
+    function precmd() {
+        if [[ -z $HSENV ]]; then
+            NUMBER_OF_ENVS=$(find . -maxdepth 1 -type d -name ".hsenv_*" | wc -l)
+            case ${NUMBER_OF_ENVS} in
+                "0") ;;
+                "1") source .hsenv_*/bin/activate;;
+                *) echo multiple environments, manual activaton required;;
+            esac
+        fi
+    }
+    export PROMPT_COMMAND=precmd
