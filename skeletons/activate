@@ -4,7 +4,7 @@ if [ -n "${HSENV}" ]; then
     else
         echo "There is already ${HSENV_NAME} Virtual Haskell Environment activated."
         echo "(at ${HSENV})"
-        echo "Deactivate it first (using command 'deactivate'), to activate"
+        echo "Deactivate it first (using command 'deactivate_hsenv'), to activate"
         echo "<HSENV_NAME> environment."
     fi
     return 1
@@ -17,12 +17,12 @@ echo "Activating ${HSENV_NAME} Virtual Haskell Environment (at ${HSENV})."
 echo ""
 echo "Use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haskell environment."
 echo ""
-echo "To exit from this virtual environment, enter command 'deactivate'."
+echo "To exit from this virtual environment, enter command 'deactivate_hsenv'."
 
 export "HSENV_PATH_BACKUP"="${PATH}"
 export "HSENV_PS1_BACKUP"="${PS1}"
 
-deactivate() {
+deactivate_hsenv() {
     echo "Deactivating ${HSENV_NAME} Virtual Haskell Environment (at ${HSENV})."
     echo "Restoring previous environment settings."
 
@@ -34,7 +34,7 @@ deactivate() {
     unset -v HSENV
     unset -v HSENV_NAME
     unset -v GHC_PACKAGE_PATH
-    unset -f deactivate
+    unset -f deactivate_hsenv
 
     if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
         hash -r

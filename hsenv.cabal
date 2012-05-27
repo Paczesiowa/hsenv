@@ -35,10 +35,10 @@ Description:         hsenv is a tool (inspired by Python's virtualenv) to create
                      and also the external environments (global and user) will not affect it (this environment
                      will only inherit very basic packages - mostly ghc and Cabal and their deps).
                      .
-                     When you're done working with this environment, enter command 'deactivate',
+                     When you're done working with this environment, enter command 'deactivate_hsenv',
                      or just close the current shell (with exit).
                      .
-                     > deactivate
+                     > deactivate_hsenv
                      .
                      Advanced usage.
                      .
