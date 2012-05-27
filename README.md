@@ -161,3 +161,18 @@ Q: Can I share one cabalized project directory among multiple environments
    (e.g. build cabalized project in the same dir using different environments)?  
 A: Yes. hsenv also overrides cabal with a wrapper, that will force using different
    builddirs, so there shouldn't be even any recompilation between different environments.
+
+Q: Is it possible to activate an environment upon entering its directory?  
+A: Yes, if you really know what you're doing. Here's a snippet for bash:
+
+   > function precmd() {
+   >     if [[ -z $HSENV ]]; then
+   >         NUMBER_OF_ENVS=$(find . -maxdepth 1 -type d -name ".hsenv_*" | wc -l)
+   >         case ${NUMBER_OF_ENVS} in
+   >             "0") ;;
+   >             "1") source .hsenv_*/bin/activate;;
+   >             *) echo multiple environments, manual activaton required;;
+   >         esac
+   >     fi
+   > }
+   > export PROMPT_COMMAND=precmd
