@@ -38,13 +38,15 @@ installCabalWrapper :: MyMonad ()
 installCabalWrapper = do
   cabalConfig  <- cabalConfigLocation
   dirStructure <- hseDirStructure
+  hsEnvName'   <- asks hsEnvName
   let cabalWrapper = hsEnvBinDir dirStructure </> "cabal"
   info $ concat [ "Installing cabal wrapper using "
                 , cabalConfig
                 , " at "
                 , cabalWrapper
                 ]
-  let cabalWrapperContents = substs [("<CABAL_CONFIG>", cabalConfig)] cabalWrapperSkel
+  let cabalWrapperContents = substs [ ("<CABAL_CONFIG>", cabalConfig)
+                                    , ("<HSENV_NAME>", hsEnvName')] cabalWrapperSkel
   indentMessages $ do
     trace "cabal wrapper contents:"
     indentMessages $ mapM_ trace $ lines cabalWrapperContents

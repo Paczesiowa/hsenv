@@ -156,3 +156,8 @@ A: Yes. The only (minor) exception is ghci history - there's only one
 Q: Can I use multiple environments in the same directory (e.g. to test
    my project against different ghc versions)?  
 A: Yes, just use different names for all the environments.
+
+Q: Can I share one cabalized project directory among multiple environments
+   (e.g. build cabalized project in the same dir using different environments)?  
+A: Yes. hsenv also overrides cabal with a wrapper, that will force using different
+   builddirs, so there shouldn't be even any recompilation between different environments.
