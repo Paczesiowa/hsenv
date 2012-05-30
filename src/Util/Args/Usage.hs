@@ -13,7 +13,7 @@ import System.Environment (getProgName)
 -- right column contains info messages for that argument
 -- returns list of lines
 showFlagDescr :: ArgDescr -> [String]
-showFlagDescr argDescr = zipWith makeLine lefts msgLines
+showFlagDescr argDescr = zipWith makeLine lefts helpLines
     where lefts    = argLine : repeat ""
           argLine  = case argDescr of
                        SwitchDescr name _ Nothing -> "--" ++ name
@@ -24,6 +24,11 @@ showFlagDescr argDescr = zipWith makeLine lefts msgLines
                                      SwitchDescr _ hlp _ -> hlp
                                      ValArg _ _ default' help ->
                                          concat [help, "\n", defaultsLine default']
+          helpLines = if length argLine < 18 then
+                          msgLines
+                      else
+                          "" : msgLines -- line with argument is too long
+                                        -- make more room for it
           defaultsLine (ConstValue s) = concat ["(defaults to '", s, "')"]
           defaultsLine (DynValue s)   = concat ["(defaults to ", s, ")"]
           makeLine infoLine descrLine = (infoLine `padTo` 20) ++ descrLine
