@@ -8,7 +8,7 @@ module Actions ( cabalUpdate
                , createDirStructure
                ) where
 
-import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive)
+import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory)
 import System.FilePath ((</>))
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
@@ -106,9 +106,19 @@ installCabalConfig :: MyMonad ()
 installCabalConfig = do
   cabalConfig  <- cabalConfigLocation
   dirStructure <- hseDirStructure
+  noSharingFlag  <- asks noSharing
+  hackageCache <- indentMessages $
+      if noSharingFlag then do
+          info "Using private Hackage download cache directory"
+          return $ cabalDir dirStructure </> "packages"
+      else do
+          info "Using user-wide (~/.cabal/packages) Hackage download cache directory"
+          cabalInstallDir <- liftIO $ getAppUserDataDirectory "cabal"
+          return $ cabalInstallDir </> "packages"
   info $ "Installing cabal config at " ++ cabalConfig
   let cabalConfigContents = substs [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
                                    , ("<CABAL_DIR>", cabalDir dirStructure)
+                                   , ("<HACKAGE_CACHE>", hackageCache)
                                    ] cabalConfigSkel
   indentMessages $ do
     trace "cabal config contents:"

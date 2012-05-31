@@ -1,5 +1,5 @@
 remote-repo: hackage.haskell.org:http://hackage.haskell.org/packages/archive
-remote-repo-cache: <CABAL_DIR>/packages
+remote-repo-cache: <HACKAGE_CACHE>
 logs-dir: <CABAL_DIR>/logs
 world-file: <CABAL_DIR>/world
 package-db: <GHC_PACKAGE_PATH>

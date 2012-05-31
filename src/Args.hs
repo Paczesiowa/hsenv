@@ -19,7 +19,7 @@ versionString :: String
 versionString = "dev"
 #endif
 
-verbosityOpt, veryVerbosityOpt, skipSanityOpt :: Switch
+verbosityOpt, veryVerbosityOpt, skipSanityOpt, sharingOpt :: Switch
 
 verbosityOpt = Switch { switchName  = "verbose"
                       , switchHelp  = "Print some debugging info"
@@ -35,6 +35,11 @@ skipSanityOpt = Switch { switchName  = "skip-sanity-check"
                        , switchHelp  = "Skip all the sanity checks (use at your own risk)"
                        , switchShort = Nothing
                        }
+
+sharingOpt = Switch { switchName  = "dont-share-cabal-cache"
+                    , switchHelp  = "Don't share ~/.cabal/packages (hackage download cache)"
+                    , switchShort = Nothing
+                    }
 
 nameOpt, ghcOpt :: DynOpt
 
@@ -81,12 +86,14 @@ argParser = proc () -> do
               Nothing   -> System
               Just path -> Tarball path
   skipSanityCheckFlag <- getOpt skipSanityOpt -< ()
+  sharingFlag <- getOpt sharingOpt -< () --reversed value
   make <- getOpt makeOpt -< ()
   returnA -< Options{ verbosity       = verboseness
                    , skipSanityCheck = skipSanityCheckFlag
                    , hsEnvName       = name
                    , ghcSource       = ghc
                    , makeCmd         = make
+                   , noSharing       = not sharingFlag
                    }
     where liftIO' = liftIO . const
 

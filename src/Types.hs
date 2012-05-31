@@ -22,6 +22,7 @@ data Options = Options { verbosity       :: Verbosity
                        , hsEnvName       :: String -- Virtual Haskell Environment name
                        , ghcSource       :: GhcSource
                        , makeCmd         :: String -- make substitute used for 'make install' of external GHC
+                       , noSharing       :: Bool   -- don't share ~/.cabal/packages
                        }
 
 data MyState = MyState { logDepth :: Integer -- used for indentation of logging messages
