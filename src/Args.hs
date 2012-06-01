@@ -86,14 +86,14 @@ argParser = proc () -> do
               Nothing   -> System
               Just path -> Tarball path
   skipSanityCheckFlag <- getOpt skipSanityOpt -< ()
-  sharingFlag <- getOpt sharingOpt -< () --reversed value
+  noSharingFlag <- getOpt sharingOpt -< ()
   make <- getOpt makeOpt -< ()
   returnA -< Options{ verbosity       = verboseness
                    , skipSanityCheck = skipSanityCheckFlag
                    , hsEnvName       = name
                    , ghcSource       = ghc
                    , makeCmd         = make
-                   , noSharing       = not sharingFlag
+                   , noSharing       = noSharingFlag
                    }
     where liftIO' = liftIO . const
 
