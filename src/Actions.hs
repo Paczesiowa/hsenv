@@ -8,7 +8,7 @@ module Actions ( cabalUpdate
                , createDirStructure
                ) where
 
-import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory)
+import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory, doesFileExist)
 import System.FilePath ((</>))
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
@@ -24,14 +24,35 @@ import Util.Template (substs)
 import Util.IO (makeExecutable, createTemporaryDirectory)
 import Skeletons
 
--- update cabal package info inside Virtual Haskell Environmentn
+-- update cabal package info inside Virtual Haskell Environment
 cabalUpdate :: MyMonad ()
 cabalUpdate = do
-  env         <- getVirtualEnvironment
-  cabalConfig <- cabalConfigLocation
-  info "Updating cabal package database inside Virtual Haskell Environment."
-  _ <- indentMessages $ runProcess (Just env) "cabal" ["--config-file=" ++ cabalConfig, "update"] Nothing
-  return ()
+  noSharingFlag <- asks noSharing
+  if noSharingFlag then do
+    debug "Sharing user-wide ~/.cabal/packages disabled"
+    cabalUpdate'
+   else do
+    debug "Sharing user-wide ~/.cabal/packages enabled, checking if data is already downloaded"
+    cabalInstallDir <- liftIO $ getAppUserDataDirectory "cabal"
+    let hackageData = foldl (</>) cabalInstallDir [ "packages"
+                                                  , "hackage.haskell.org"
+                                                  , "00-index.tar"
+                                                  ]
+    dataExists <- liftIO $ doesFileExist hackageData
+    if dataExists then do
+      info "Skipping 'cabal update' step, Hackage download cache already downloaded"
+      info "  to ~/.cabal/packages/. You can update it manually with 'cabal update'"
+      info "  (from inside or outside the virtual environment)."
+     else do
+      debug "No user-wide Hackage cache data downloaded"
+      cabalUpdate'
+      where cabalUpdate' = do
+              env         <- getVirtualEnvironment
+              cabalConfig <- cabalConfigLocation
+              info "Updating cabal package database inside Virtual Haskell Environment."
+              _ <- indentMessages $ runProcess (Just env) "cabal" ["--config-file=" ++ cabalConfig, "update"] Nothing
+              return ()
+
 
 -- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
 installCabalWrapper :: MyMonad ()
