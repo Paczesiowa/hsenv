@@ -26,6 +26,7 @@ data Options = Options { verbosity       :: Verbosity
                        , makeCmd         :: String -- make substitute used for 'make install' of external GHC
                        , noSharing       :: Bool   -- don't share ~/.cabal/packages
                        , noPS1           :: Bool   -- Don't modify shell prompt
+                       , cabalBootstrap  :: Bool
                        }
 
 data HsenvState = HsenvState { logDepth :: Integer -- used for indentation of logging messages

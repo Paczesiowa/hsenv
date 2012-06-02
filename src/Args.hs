@@ -18,7 +18,7 @@ versionString :: String
 versionString = "dev"
 #endif
 
-verbosityOpt, veryVerbosityOpt, skipSanityOpt, sharingOpt, noPS1Opt :: Switch
+verbosityOpt, veryVerbosityOpt, skipSanityOpt, sharingOpt, noPS1Opt, bootstrapCabalOpt :: Switch
 
 verbosityOpt = Switch { switchName  = "verbose"
                       , switchHelp  = "Print some debugging info"
@@ -44,6 +44,14 @@ noPS1Opt =
     Switch { switchName = "no-ps1-indicator"
            , switchHelp =
                "Don't modify the shell prompt to indicate the current hsenv"
+           , switchShort = Nothing
+           }
+
+bootstrapCabalOpt =
+    Switch { switchName  = "bootstrap-cabal"
+           , switchHelp  = "Bootstrap cabal-install inside virtual environment"
+                           ++ "(Use this if you don't have cabal-install installed "
+                           ++ "or it's not on your $PATH)"
            , switchShort = Nothing
            }
 
@@ -94,6 +102,7 @@ argParser = proc () -> do
                      | otherwise              -> Tarball s
   skipSanityCheckFlag <- getOpt skipSanityOpt -< ()
   noSharingFlag <- getOpt sharingOpt -< ()
+  bootstrapCabalFlag <- getOpt bootstrapCabalOpt -< ()
   make <- getOpt makeOpt -< ()
   returnA -< Options{ verbosity       = verboseness
                    , skipSanityCheck = skipSanityCheckFlag
@@ -102,6 +111,7 @@ argParser = proc () -> do
                    , makeCmd         = make
                    , noSharing       = noSharingFlag
                    , noPS1           = noPS1'
+                   , cabalBootstrap  = bootstrapCabalFlag
                    }
 
 getArgs :: IO Options

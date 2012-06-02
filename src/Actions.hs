@@ -9,6 +9,7 @@ module Actions ( cabalUpdate
                , initGhcDb
                , installGhc
                , createDirStructure
+               , bootstrapCabal
                ) where
 
 import Control.Monad
@@ -34,6 +35,7 @@ import Process
 import Util.Template (substs)
 import Util.IO (makeExecutable, createTemporaryDirectory)
 import Skeletons
+import CabalBootstrap (bootstrapCabal)
 
 -- update cabal package info inside Virtual Haskell Environment
 cabalUpdate :: Hsenv ()
