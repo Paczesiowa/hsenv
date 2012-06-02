@@ -48,8 +48,8 @@ runProcess env prog args input = do
     ExitFailure errCode -> throwError $ MyException $ prog ++ " process failed with status " ++ show errCode
 
 -- run outside ghc-pkg tool (uses system's or from ghc installed from tarball)
-outsideGhcPkg :: [String] -> MyMonad String
-outsideGhcPkg args = do
+outsideGhcPkg :: [String] -> Maybe String -> MyMonad String
+outsideGhcPkg args input = do
   ghc <- asks ghcSource
   dirStructure <- hseDirStructure
   ghcPkg <- case ghc of
@@ -59,13 +59,13 @@ outsideGhcPkg args = do
     Tarball _ -> do
       debug "Running ghc-pkg installed from GHC's tarball"
       return $ ghcDir dirStructure </> "bin" </> "ghc-pkg"
-  indentMessages $ runProcess Nothing ghcPkg args Nothing
+  indentMessages $ runProcess Nothing ghcPkg args input
 
 -- returns path to GHC (installed from tarball) builtin package database
 externalGhcPkgDb :: MyMonad FilePath
 externalGhcPkgDb = do
   debug "Checking where GHC (installed from tarball) keeps its package database"
-  out <- indentMessages $ outsideGhcPkg ["list"]
+  out <- indentMessages $ outsideGhcPkg ["list"] Nothing
   indentMessages $ debug "Trying to parse ghc-pkg's output"
   case lines out of
     []             -> throwError $ MyException "ghc-pkg returned empty output"
