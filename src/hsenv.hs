@@ -1,3 +1,4 @@
+import Control.Monad (when)
 import System.IO (stderr, hPutStrLn)
 import System.Exit (exitFailure)
 import System.FilePath ((</>))
@@ -39,6 +40,8 @@ realMain = do
   installCabalConfig
   installActivateScript
   installCabalWrapper
+  bootstrapCabalFlag <- asks cabalBootstrap
+  when bootstrapCabalFlag bootstrapCabal
   cabalUpdate
   info ""
   dotDir <- dotDirName

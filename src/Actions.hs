@@ -6,6 +6,7 @@ module Actions ( cabalUpdate
                , initGhcDb
                , installGhc
                , createDirStructure
+               , bootstrapCabal
                ) where
 
 import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory, doesFileExist)
@@ -23,6 +24,7 @@ import Process
 import Util.Template (substs)
 import Util.IO (makeExecutable, createTemporaryDirectory)
 import Skeletons
+import CabalBootstrap (bootstrapCabal)
 
 -- update cabal package info inside Virtual Haskell Environment
 cabalUpdate :: MyMonad ()

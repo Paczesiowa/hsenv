@@ -19,7 +19,7 @@ versionString :: String
 versionString = "dev"
 #endif
 
-verbosityOpt, veryVerbosityOpt, skipSanityOpt, sharingOpt :: Switch
+verbosityOpt, veryVerbosityOpt, skipSanityOpt, sharingOpt, bootstrapCabalOpt :: Switch
 
 verbosityOpt = Switch { switchName  = "verbose"
                       , switchHelp  = "Print some debugging info"
@@ -40,6 +40,14 @@ sharingOpt = Switch { switchName  = "dont-share-cabal-cache"
                     , switchHelp  = "Don't share ~/.cabal/packages (hackage download cache)"
                     , switchShort = Nothing
                     }
+
+bootstrapCabalOpt =
+    Switch { switchName  = "bootstrap-cabal"
+           , switchHelp  = "Bootstrap cabal-install inside virtual environment"
+                           ++ "(Use this if you don't have cabal-install installed "
+                           ++ "or it's not on your $PATH)"
+           , switchShort = Nothing
+           }
 
 nameOpt, ghcOpt :: DynOpt
 
@@ -87,6 +95,7 @@ argParser = proc () -> do
               Just path -> Tarball path
   skipSanityCheckFlag <- getOpt skipSanityOpt -< ()
   noSharingFlag <- getOpt sharingOpt -< ()
+  bootstrapCabalFlag <- getOpt bootstrapCabalOpt -< ()
   make <- getOpt makeOpt -< ()
   returnA -< Options{ verbosity       = verboseness
                    , skipSanityCheck = skipSanityCheckFlag
@@ -94,6 +103,7 @@ argParser = proc () -> do
                    , ghcSource       = ghc
                    , makeCmd         = make
                    , noSharing       = noSharingFlag
+                   , cabalBootstrap  = bootstrapCabalFlag
                    }
     where liftIO' = liftIO . const
 
