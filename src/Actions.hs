@@ -243,7 +243,7 @@ initGhcDb :: Hsenv ()
 initGhcDb = do
   dirStructure <- hseDirStructure
   info $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
-  out <- indentMessages $ outsideGhcPkg ["--version"]
+  out <- indentMessages $ outsideGhcPkg ["--version"] Nothing
   case lastMay $ words out of
     Nothing            -> throwError $ HsenvException $ "Couldn't extract ghc-pkg version number from: " ++ out
     Just versionString -> do
@@ -254,7 +254,7 @@ initGhcDb = do
         indentMessages $ debug "Detected GHC older than 6.12, initializing GHC_PACKAGE_PATH to file with '[]'"
         liftIO $ writeFile (ghcPackagePath dirStructure) "[]"
        else do
-        _ <- indentMessages $ outsideGhcPkg ["init", ghcPackagePath dirStructure]
+        _ <- indentMessages $ outsideGhcPkg ["init", ghcPackagePath dirStructure] Nothing
         return ()
 
 -- copy optional packages and don't fail completely if this copying fails

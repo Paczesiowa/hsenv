@@ -10,12 +10,12 @@ import Control.Monad (unless)
 
 import Types
 import HsenvMonad
-import Process (outsideProcess', insideProcess)
+import Process (outsideProcess, insideProcess)
 import Util.Cabal (prettyPkgInfo, prettyVersion)
 import qualified Util.Cabal (parseVersion, parsePkgInfo)
 
-outsideGhcPkg :: [String] -> Hsenv String
-outsideGhcPkg = outsideProcess' "ghc-pkg"
+outsideGhcPkg :: [String] -> Maybe String -> Hsenv String
+outsideGhcPkg = outsideProcess "ghc-pkg"
 
 insideGhcPkg :: [String] -> Maybe String -> Hsenv String
 insideGhcPkg = insideProcess "ghc-pkg"
@@ -34,7 +34,7 @@ getDeps :: PackageIdentifier -> Hsenv [PackageIdentifier]
 getDeps pkgInfo = do
   let prettyPkg = prettyPkgInfo pkgInfo
   debug $ "Extracting dependencies of " ++ prettyPkg
-  out <- indentMessages $ outsideGhcPkg ["field", prettyPkg, "depends"]
+  out <- indentMessages $ outsideGhcPkg ["field", prettyPkg, "depends"] Nothing
   -- example output:
   -- depends: ghc-prim-0.2.0.0-3fbcc20c802efcd7c82089ec77d92990
   --          integer-gmp-0.2.0.0-fa82a0df93dc30b4a7c5654dd7c68cf4 builtin_rts
@@ -55,7 +55,7 @@ instance Transplantable PackageName where
       debug $ "Copying package " ++ packageName ++ " to Virtual Haskell Environment."
       indentMessages $ do
         debug "Choosing package with highest version number."
-        out <- indentMessages $ outsideGhcPkg ["field", packageName, "version"]
+        out <- indentMessages $ outsideGhcPkg ["field", packageName, "version"] Nothing
         -- example output:
         -- version: 1.1.4
         -- version: 1.2.0.3
@@ -105,6 +105,6 @@ movePackage :: PackageIdentifier -> Hsenv ()
 movePackage pkgInfo = do
   let prettyPkg = prettyPkgInfo pkgInfo
   debug $ "Moving package " ++ prettyPkg ++ " to Virtual Haskell Environment."
-  out <- outsideGhcPkg ["describe", prettyPkg]
+  out <- outsideGhcPkg ["describe", prettyPkg] Nothing
   _ <- insideGhcPkg ["register", "-"] (Just out)
   return ()
