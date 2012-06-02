@@ -1,6 +1,8 @@
 module PackageManagement ( Transplantable(..)
                          , parseVersion
                          , parsePkgInfo
+                         , getHighestVersion
+                         , GhcPkg
                          ) where
 
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
@@ -42,31 +44,38 @@ getDeps pkgInfo = do
 class Transplantable a where
     transplantPackage :: a -> MyMonad ()
 
+type GhcPkg = [String] -> Maybe String -> MyMonad String
+
+getHighestVersion :: PackageName -> GhcPkg -> MyMonad Version
+getHighestVersion (PackageName packageName) ghcPkg = do
+  debug $ "Checking the highest installed version of package " ++ packageName
+  out <- indentMessages $ ghcPkg ["field", packageName, "version"] Nothing
+  -- example output:
+  -- version: 1.1.4
+  -- version: 1.2.0.3
+  let extractVersionString :: String -> MyMonad String
+      extractVersionString line =
+          case words line of
+            [_, x] -> return x
+            _   -> throwError $ MyException $ "Couldn't extract version string from: " ++ line
+  versionStrings <- mapM extractVersionString $ lines out
+  indentMessages $ trace $ "Found version strings: " ++ unwords versionStrings
+  versions <- mapM parseVersion versionStrings
+  case versions of
+    []     -> throwError $ MyException $ "No versions of package " ++ packageName ++ " found"
+    (v:vs) -> do
+      indentMessages $ debug $ "Found: " ++ unwords (map prettyVersion versions)
+      return $ foldr max v vs
+
 -- choose the highest installed version of package with this name
 instance Transplantable PackageName where
-    transplantPackage (PackageName packageName) = do
+    transplantPackage pkg@(PackageName packageName) = do
       debug $ "Copying package " ++ packageName ++ " to Virtual Haskell Environment."
       indentMessages $ do
-        debug "Choosing package with highest version number."
-        out <- indentMessages $ outsideGhcPkg ["field", packageName, "version"] Nothing
-        -- example output:
-        -- version: 1.1.4
-        -- version: 1.2.0.3
-        let extractVersionString :: String -> MyMonad String
-            extractVersionString line = case words line of
-                                          [_, x] -> return x
-                                          _   -> throwError $ MyException $ "Couldn't extract version string from: " ++ line
-        versionStrings <- mapM extractVersionString $ lines out
-        indentMessages $ trace $ "Found version strings: " ++ unwords versionStrings
-        versions <- mapM parseVersion versionStrings
-        case versions of
-          []     -> throwError $ MyException $ "No versions of package " ++ packageName ++ " found"
-          (v:vs) -> do
-            indentMessages $ debug $ "Found: " ++ unwords (map prettyVersion versions)
-            let highestVersion = foldr max v vs
-            indentMessages $ debug $ "Using version: " ++ prettyVersion highestVersion
-            let pkgInfo = PackageIdentifier (PackageName packageName) highestVersion
-            transplantPackage pkgInfo
+        highestVersion <- getHighestVersion pkg outsideGhcPkg
+        debug $ "Using version: " ++ prettyVersion highestVersion
+        let pkgInfo = PackageIdentifier (PackageName packageName) highestVersion
+        transplantPackage pkgInfo
 
 -- check if this package is already installed in Virtual Haskell Environment
 checkIfInstalled :: PackageIdentifier -> MyMonad Bool
