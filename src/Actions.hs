@@ -9,7 +9,7 @@ module Actions ( cabalUpdate
                , bootstrapCabal
                ) where
 
-import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory, doesFileExist)
+import System.Directory
 import System.FilePath ((</>))
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
@@ -17,12 +17,13 @@ import Safe (lastMay)
 import Data.List (intercalate)
 
 import MyMonad
+import MyMonadUtils
 import Types
 import Paths
 import PackageManagement
 import Process
 import Util.Template (substs)
-import Util.IO (makeExecutable, createTemporaryDirectory)
+import Util.IO (makeExecutable)
 import Skeletons
 import CabalBootstrap (bootstrapCabal)
 
@@ -221,21 +222,19 @@ installGhc = do
 installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
   info $ "Installing GHC from " ++ tarballPath
-  indentMessages $ do
-    dirStructure <- hseDirStructure
-    tmpGhcDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc"
-    debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
-    _ <- indentMessages $ runProcess Nothing "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] Nothing
-    let configureScript = tmpGhcDir </> "configure"
-    debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
+  dirStructure <- hseDirStructure
+  runInTmpDir $ do
+    debug "Unpacking GHC tarball"
+    _ <- indentMessages $ runProcess Nothing "tar" [ "xf"
+                                                  , tarballPath
+                                                  , "--strip-components"
+                                                  , "1"
+                                                  ] Nothing
     cwd <- liftIO getCurrentDirectory
-    liftIO $ setCurrentDirectory tmpGhcDir
+    let configureScript = cwd </> "configure"
+    debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
     make <- asks makeCmd
-    let configureAndInstall = do
-          _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
-          debug $ "Installing GHC with " ++ make ++ " install"
-          _ <- indentMessages $ runProcess Nothing make ["install"] Nothing
-          return ()
-    configureAndInstall `finally` liftIO (setCurrentDirectory cwd)
-    liftIO $ removeDirectoryRecursive tmpGhcDir
+    _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
+    debug $ "Installing GHC with " ++ make ++ " install"
+    _ <- indentMessages $ runProcess Nothing make ["install"] Nothing
     return ()
