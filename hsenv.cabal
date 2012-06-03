@@ -145,6 +145,10 @@ Executable hsenv
                , http-streams >= 0.6.0.2 && <= 0.7
                , io-streams >= 1.1.0.0 && <= 1.2.0.0
                , hackage-db >= 1.3 && < 1.4
+               , zlib >= 0.5.3.3 && < 0.6
+               , HTTP >= 4000.2.3 && < 4000.3
+               , network >= 2.3.0.13 && < 2.5
+               , tar >= 0.4 && < 0.5
 
   Other-modules: Util.Cabal
                , Util.Args

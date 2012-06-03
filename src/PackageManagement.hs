@@ -1,6 +1,7 @@
 module PackageManagement ( Transplantable(..)
                          , parseVersion
                          , parsePkgInfo
+                         , insideGhcPkg
                          , outsideGhcPkg
                          , getHighestVersion
                          , GhcPkg
