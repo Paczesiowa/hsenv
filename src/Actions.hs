@@ -13,7 +13,7 @@ module Actions ( cabalUpdate
                ) where
 
 import Control.Monad
-import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory, doesFileExist, findExecutable)
+import System.Directory
 import System.FilePath ((</>))
 import System.Info (arch, os)
 import System.Posix hiding (createDirectory, version)
@@ -28,12 +28,13 @@ import qualified Data.ByteString.Char8 as C8
 import qualified System.IO.Streams as S
 
 import HsenvMonad
+import HsenvMonadUtils
 import Types
 import Paths
 import PackageManagement
 import Process
 import Util.Template (substs)
-import Util.IO (makeExecutable, createTemporaryDirectory)
+import Util.IO (makeExecutable)
 import Skeletons
 import CabalBootstrap (bootstrapCabal)
 
@@ -300,23 +301,21 @@ installGhc = do
 installExternalGhc :: FilePath -> Hsenv ()
 installExternalGhc tarballPath = do
   info $ "Installing GHC from " ++ tarballPath
-  indentMessages $ do
-    dirStructure <- hseDirStructure
-    tmpGhcDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc"
-    debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
-    _ <- indentMessages $ outsideProcess' "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"]
-    let configureScript = tmpGhcDir </> "configure"
-    debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
+  dirStructure <- hseDirStructure
+  runInTmpDir $ do
+    debug "Unpacking GHC tarball"
+    _ <- indentMessages $ outsideProcess' "tar" [ "xf"
+                                               , tarballPath
+                                               , "--strip-components"
+                                               , "1"
+                                               ]
     cwd <- liftIO getCurrentDirectory
-    liftIO $ setCurrentDirectory tmpGhcDir
+    let configureScript = cwd </> "configure"
+    debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
     make <- asks makeCmd
-    let configureAndInstall = do
-          _ <- indentMessages $ outsideProcess' configureScript ["--prefix=" ++ ghcDir dirStructure]
-          debug $ "Installing GHC with " ++ make ++ " install"
-          _ <- indentMessages $ outsideProcess' make ["install"]
-          return ()
-    configureAndInstall `finally` liftIO (setCurrentDirectory cwd)
-    liftIO $ removeDirectoryRecursive tmpGhcDir
+    _ <- indentMessages $ outsideProcess' configureScript ["--prefix=" ++ ghcDir dirStructure]
+    debug $ "Installing GHC with " ++ make ++ " install"
+    _ <- indentMessages $ outsideProcess' make ["install"]
     return ()
 
 -- Download a file over HTTP using streams, so it
@@ -334,15 +333,12 @@ downloadFile url name = do
   maybe (return ()) throwError m_ex
 
 installRemoteGhc :: String -> Hsenv ()
-installRemoteGhc url = do
-    dirStructure <- hseDirStructure
-    downloadDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc-download"
-    let tarball = downloadDir </> "tarball"
+installRemoteGhc url = runInTmpDir $ do
+    cwd <- liftIO getCurrentDirectory
+    let tarball = cwd </> "tarball"
     debug $ "Downloading GHC from " ++ url
     downloadFile (C8.pack url) tarball
     installExternalGhc tarball
-    liftIO $ removeDirectoryRecursive downloadDir
-    return ()
 
 installReleasedGhc :: String -> Hsenv ()
 installReleasedGhc tag = do
