@@ -2,12 +2,14 @@ module Util.Cabal ( prettyVersion
                   , prettyPkgInfo
                   , parseVersion
                   , parsePkgInfo
+                  , executableMatchesCabal
                   ) where
 
-import Distribution.Version (Version(..))
-import Distribution.Package (PackageIdentifier(..), PackageName(..))
+import Distribution.Version (Version(..), withinRange)
+import Distribution.Package (PackageName(..), Dependency(..), PackageIdentifier(..))
 import Distribution.Compat.ReadP (readP_to_S)
 import Distribution.Text (parse, Text)
+import Distribution.PackageDescription (condTreeConstraints, condExecutables, GenericPackageDescription)
 
 import Data.Char (isSpace)
 import Data.List (isPrefixOf, intercalate)
@@ -37,3 +39,14 @@ parsePkgInfo str | "builtin_" `isPrefixOf` str =
                      let name = drop (length "builtin_") str -- ghc-pkg doesn't like builtin_ prefix
                      in Just $ PackageIdentifier (PackageName name) $ Version [] []
                  | otherwise = parseCheck str
+
+executableMatchesCabal :: String -> Version -> GenericPackageDescription -> Bool
+executableMatchesCabal executable cabalVersion pkgDescr =
+    case lookup executable $ condExecutables pkgDescr of
+      Nothing -> False
+      Just depGraph ->
+          let deps = condTreeConstraints depGraph
+              isCabalDep (Dependency (PackageName name) _) = name == "Cabal"
+              cabalDeps = filter isCabalDep deps
+              matchesDep (Dependency _ versionRange) = cabalVersion `withinRange` versionRange
+          in all matchesDep cabalDeps
