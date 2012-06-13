@@ -1,3 +1,4 @@
+(setq hsenv-activated nil)
 (setq hsenv nil)
 (setq hsenv-path-backup nil)
 (setq hsenv-exec-path-backup nil)
@@ -24,16 +25,18 @@
     (setq hsenv-exec-path-backup exec-path)
     (setq exec-path (append exec-path-prependix exec-path))
     (setenv "GHC_PACKAGE_PATH" ghc-package-path-var)
-    (setq hsenv dir)))
+    (setq hsenv-activated t)))
 
 (defun hsenv-deactivate ()
   "Deactivate the Virtual Haskell Environment"
   (interactive)
-  (setenv "PATH" hsenv-path-backup)
-  (setq exec-path hsenv-exec-path-backup)
-  (setenv "GHC_PACKAGE_PATH" nil)
-  (setq hsenv nil)
-  (setq hsenv-path-backup nil)
-  (setq hsenv-exec-path-backup nil))
+  (when hsenv-activated
+    (setenv "PATH" hsenv-path-backup)
+    (setq exec-path hsenv-exec-path-backup)
+    (setenv "GHC_PACKAGE_PATH" nil)
+    (setq hsenv nil)
+    (setq hsenv-path-backup nil)
+    (setq hsenv-exec-path-backup nil)
+    (setq hsenv-activated nil)))
 
 (provide 'hsenv)
