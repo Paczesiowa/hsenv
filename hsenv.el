@@ -28,8 +28,8 @@
                 (setenv "GHC_PACKAGE_PATH" ghc-package-path-var)
                 (setq hsenv hsenv-dir)
                 (setq hsenv-activated t))
-            (message "An hsenv is already activated (%s)." hsenv))))
-    (message "The environment you provided does not seem to be a valid hsenv directory (%s)." hsenv-dir)))
+            (message "An hsenv is already activated (%s)." hsenv)))
+    (message "The environment you provided is not a valid hsenv directory (%s)." hsenv-dir))))
 
 (defun hsenv-activate-default-environment (dir)
   "Activate the Virtual Haskell Environment named after DIR in directory DIR"
@@ -45,8 +45,10 @@
   (interactive "P")
   (if specify-env
       (let* ((dir (read-directory-name "Project directory:"))
-             (hsenv-dir (read-directory-name "Environment:" dir nil t ".hsenv_")))
-        (hsenv-activate-environment hsenv-dir))
+             (candidates (file-expand-wildcards (concat dir ".hsenv_*"))))
+        (if candidates
+            (hsenv-activate-environment (completing-read "Environment:" candidates)))
+        (message "Directory (%s) does not contain any hsenv environments."))
     (let ((dir (read-directory-name "Project directory:")))
       (hsenv-activate-default-environment dir))))
 
