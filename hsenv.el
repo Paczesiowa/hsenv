@@ -34,13 +34,15 @@
 (defun hsenv-deactivate ()
   "Deactivate the Virtual Haskell Environment"
   (interactive)
-  (when hsenv-activated
-    (setenv "PATH" hsenv-path-backup)
-    (setq exec-path hsenv-exec-path-backup)
-    (setenv "GHC_PACKAGE_PATH" nil)
-    (setq hsenv nil)
-    (setq hsenv-path-backup nil)
-    (setq hsenv-exec-path-backup nil)
-    (setq hsenv-activated nil)))
+  (if hsenv-activated
+      (progn
+        (setenv "PATH" hsenv-path-backup)
+        (setq exec-path hsenv-exec-path-backup)
+        (setenv "GHC_PACKAGE_PATH" nil)
+        (setq hsenv nil)
+        (setq hsenv-path-backup nil)
+        (setq hsenv-exec-path-backup nil)
+        (setq hsenv-activated nil))
+    (message "No hsenv currently activated.")))
 
 (provide 'hsenv)
