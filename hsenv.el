@@ -25,6 +25,7 @@
     (setq hsenv-exec-path-backup exec-path)
     (setq exec-path (append exec-path-prependix exec-path))
     (setenv "GHC_PACKAGE_PATH" ghc-package-path-var)
+    (setq hsenv hsenv-dir)
     (setq hsenv-activated t)))
 
 (defun hsenv-deactivate ()
