@@ -12,6 +12,9 @@
   "Activate the Virtual Haskell Environment named ENV_NAME in project directory DIR"
   (interactive "Dproject directory: \nsenvironment name: ")
   (setq dir (file-name-as-directory dir))
+  (when (equal env-name "")
+    (let ((dir-name (directory-file-name dir)))
+      (setq env-name (file-relative-name dir-name (file-name-directory dir-name)))))
   (let* ((hsenv-dir-name (concat dir ".hsenv_" env-name))
          (hsenv-dir (file-name-as-directory hsenv-dir-name))
          (path-var-prependix-location (concat hsenv-dir "path_var_prependix"))
