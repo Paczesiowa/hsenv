@@ -8,12 +8,12 @@
     (insert-file-contents fpath)
     (buffer-string)))
 
-(defun hsenv-activate (dir env_name)
+(defun hsenv-activate (dir env-name)
   "Activate the Virtual Haskell Environment named ENV_NAME in project directory DIR"
   (interactive "Dproject directory: \nsenvironment name: ")
-  (when (string-match "^.*/$" dir)
-    (setq dir (substring dir 0 -1)))
-  (let* ((hsenv-dir (concat dir "/.hsenv_" env_name "/"))
+  (setq dir (file-name-as-directory dir))
+  (let* ((hsenv-dir-name (concat dir ".hsenv_" env-name))
+         (hsenv-dir (file-name-as-directory hsenv-dir-name))
          (path-var-prependix-location (concat hsenv-dir "path_var_prependix"))
          (ghc-package-path-var-location (concat hsenv-dir "ghc_package_path_var"))
          (path-var-prependix (hsenv-read-file path-var-prependix-location))
