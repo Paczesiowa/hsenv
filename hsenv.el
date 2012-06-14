@@ -55,7 +55,7 @@
 (defun hsenv-activate-dir (dir)
   (let ((environments (hsenv-list-environments dir)))
     (if (null environments)
-        (message "Directory %s does not contain any hsenv.")
+        (message "Directory %s does not contain any hsenvs." dir)
       (let* ((env-name (if (= 1 (length environments))
                            (car environments)
                          (completing-read "Environment:" environments)))
