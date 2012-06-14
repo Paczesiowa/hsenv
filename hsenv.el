@@ -13,7 +13,7 @@
 (defun hsenv-is-not-active ()
   (let ((is-not-active (not hsenv-active-environment)))
     (when (not is-not-active)
-      (message "An hsenv is already activated (%s)." hsenv))
+      (message "An hsenv is already activated (%s)." (assoc-default 'dir hsenv-active-environment)))
     is-not-active))
 
 (defun hsenv-is-active ()
@@ -24,7 +24,7 @@
 
 (defun hsenv-read-file-content (hsenv-dir file)
   (with-temp-buffer
-    (insert-file-contents (concat hsenv-dir path-prepend-file))
+    (insert-file-contents (concat hsenv-dir file))
     (buffer-string)))
 
 (defun hsenv-activate-environment (hsenv-dir)
