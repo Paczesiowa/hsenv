@@ -63,9 +63,11 @@ createTemporaryDirectory parentDir templateName = do
   createDirectory path
   return path
 
-which :: String -> IO (Maybe FilePath)
-which name = do
-  path <- getEnvVar "PATH"
+which :: Maybe String -> String -> IO (Maybe FilePath)
+which pathVar name = do
+  path <- case pathVar of
+           Nothing   -> getEnvVar "PATH"
+           Just path -> return $ Just path
   case path of
     Nothing    -> return Nothing
     Just path' -> do

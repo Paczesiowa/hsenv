@@ -1,6 +1,7 @@
 module PackageManagement ( Transplantable(..)
                          , parseVersion
                          , parsePkgInfo
+                         , outsideGhcPkg
                          ) where
 
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
@@ -9,9 +10,15 @@ import Control.Monad (unless)
 
 import Types
 import MyMonad
-import Process (outsideGhcPkg, insideGhcPkg)
+import Process (outsideProcess', insideProcess)
 import Util.Cabal (prettyPkgInfo, prettyVersion)
 import qualified Util.Cabal (parseVersion, parsePkgInfo)
+
+outsideGhcPkg :: [String] -> MyMonad String
+outsideGhcPkg = outsideProcess' "ghc-pkg"
+
+insideGhcPkg :: [String] -> Maybe String -> MyMonad String
+insideGhcPkg = insideProcess "ghc-pkg"
 
 parseVersion :: String -> MyMonad Version
 parseVersion s = case Util.Cabal.parseVersion s of

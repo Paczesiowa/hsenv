@@ -47,10 +47,9 @@ cabalUpdate = do
       debug "No user-wide Hackage cache data downloaded"
       cabalUpdate'
       where cabalUpdate' = do
-              env         <- getVirtualEnvironment
               cabalConfig <- cabalConfigLocation
               info "Updating cabal package database inside Virtual Haskell Environment."
-              _ <- indentMessages $ runProcess (Just env) "cabal" ["--config-file=" ++ cabalConfig, "update"] Nothing
+              _ <- indentMessages $ insideProcess "cabal" ["--config-file=" ++ cabalConfig, "update"] Nothing
               return ()
 
 
@@ -223,16 +222,16 @@ installExternalGhc tarballPath = do
     dirStructure <- hseDirStructure
     tmpGhcDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc"
     debug $ "Unpacking GHC tarball to " ++ tmpGhcDir
-    _ <- indentMessages $ runProcess Nothing "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"] Nothing
+    _ <- indentMessages $ outsideProcess' "tar" ["xf", tarballPath, "-C", tmpGhcDir, "--strip-components", "1"]
     let configureScript = tmpGhcDir </> "configure"
     debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
     cwd <- liftIO getCurrentDirectory
     liftIO $ setCurrentDirectory tmpGhcDir
     make <- asks makeCmd
     let configureAndInstall = do
-          _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
+          _ <- indentMessages $ outsideProcess' configureScript ["--prefix=" ++ ghcDir dirStructure]
           debug $ "Installing GHC with " ++ make ++ " install"
-          _ <- indentMessages $ runProcess Nothing make ["install"] Nothing
+          _ <- indentMessages $ outsideProcess' make ["install"]
           return ()
     configureAndInstall `finally` liftIO (setCurrentDirectory cwd)
     liftIO $ removeDirectoryRecursive tmpGhcDir

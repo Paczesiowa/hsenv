@@ -33,7 +33,7 @@ checkHsenvAlreadyExists = do
 -- check if cabal binary exist on PATH
 checkCabalInstall :: MyMonad ()
 checkCabalInstall = do
-  cabalInstallPath <- liftIO $ which "cabal"
+  cabalInstallPath <- liftIO $ which Nothing "cabal"
   case cabalInstallPath of
     Just _  -> return ()
     Nothing -> throwError $ MyException "Couldn't find cabal binary (from cabal-install package) in your $PATH."
@@ -46,11 +46,11 @@ checkGhc = do
   case ghcSrc of
     Tarball _ -> return ()
     System    -> do
-      ghcPath <- liftIO $ which "ghc"
+      ghcPath <- liftIO $ which Nothing "ghc"
       case ghcPath of
         Just _  -> return ()
         Nothing -> throwError $ MyException "Couldn't find ghc binary in your $PATH."
-      ghc_pkgPath <- liftIO $ which "ghc-pkg"
+      ghc_pkgPath <- liftIO $ which Nothing "ghc-pkg"
       case ghc_pkgPath of
         Just _  -> return ()
         Nothing -> throwError $ MyException "Couldn't find ghc-pkg binary in your $PATH."
