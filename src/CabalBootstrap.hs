@@ -14,8 +14,8 @@ import Types
 import MyMonad
 import MyMonadUtils
 import Paths
-import Process (insideGhcPkg, runProcess)
-import PackageManagement (getHighestVersion)
+import Process
+import PackageManagement
 import Util.Cabal (prettyVersion, executableMatchesCabal)
 
 hackageDomain :: String
@@ -113,7 +113,6 @@ bootstrapCabal = do
   let url = getCIBURI cibVersion
   trace $ "Download URL: " ++ show url
   tarredPkg <- downloadHTTPUncompress url
-  env <- getVirtualEnvironment
   dirStructure <- hseDirStructure
   let prefix = cabalDir dirStructure
   runInTmpDir $ do
@@ -124,13 +123,10 @@ bootstrapCabal = do
     let pkgDir = cwd </> "cabal-install-bundle-" ++ prettyVersion cibVersion
         setup  = pkgDir </> "Setup.hs"
     liftIO $ setCurrentDirectory pkgDir
-    runProcess (Just env) "runghc" [ setup
-                                   , "configure"
-                                   , "--prefix=" ++ prefix
-                                   , "--user"
-                                   ] Nothing
+    let cabalSetup args = insideProcess "runghc" (setup:args) Nothing
+    cabalSetup ["configure", "--prefix=" ++ prefix, "--user"]
     debug "Building cabal-install-bundle"
-    runProcess (Just env) "runghc" [ setup, "build"] Nothing
+    cabalSetup ["build"]
     debug "Installing cabal-install-bundle"
-    runProcess (Just env) "runghc" [ setup, "install"] Nothing
+    cabalSetup ["install"]
   return ()

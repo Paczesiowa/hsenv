@@ -50,10 +50,9 @@ cabalUpdate = do
       debug "No user-wide Hackage cache data downloaded"
       cabalUpdate'
       where cabalUpdate' = do
-              env         <- getVirtualEnvironment
               cabalConfig <- cabalConfigLocation
               info "Updating cabal package database inside Virtual Haskell Environment."
-              _ <- indentMessages $ runProcess (Just env) "cabal" ["--config-file=" ++ cabalConfig, "update"] Nothing
+              _ <- indentMessages $ insideProcess "cabal" ["--config-file=" ++ cabalConfig, "update"] Nothing
               return ()
 
 
@@ -225,16 +224,12 @@ installExternalGhc tarballPath = do
   dirStructure <- hseDirStructure
   runInTmpDir $ do
     debug "Unpacking GHC tarball"
-    _ <- indentMessages $ runProcess Nothing "tar" [ "xf"
-                                                  , tarballPath
-                                                  , "--strip-components"
-                                                  , "1"
-                                                  ] Nothing
+    _ <- indentMessages $ outsideProcess' "tar" ["xf", tarballPath, "--strip-components", "1"]
     cwd <- liftIO getCurrentDirectory
     let configureScript = cwd </> "configure"
     debug $ "Configuring GHC with prefix " ++ ghcDir dirStructure
     make <- asks makeCmd
-    _ <- indentMessages $ runProcess Nothing configureScript ["--prefix=" ++ ghcDir dirStructure] Nothing
+    _ <- indentMessages $ outsideProcess' configureScript ["--prefix=" ++ ghcDir dirStructure]
     debug $ "Installing GHC with " ++ make ++ " install"
-    _ <- indentMessages $ runProcess Nothing make ["install"] Nothing
+    _ <- indentMessages $ outsideProcess' make ["install"]
     return ()

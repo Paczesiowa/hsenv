@@ -1,13 +1,14 @@
 module Paths ( hseDirStructure
              , cabalConfigLocation
-             , getVirtualEnvironment
              , dotDirName
+             , insidePathVar
              ) where
 
+import Data.List (intercalate)
 import System.FilePath ((</>))
 import System.Directory (getCurrentDirectory)
-import System.Environment (getEnvironment)
 
+import Util.IO (getEnvVar)
 import Types
 import MyMonad
 
@@ -43,11 +44,16 @@ cabalConfigLocation = do
   dirStructure <- hseDirStructure
   return $ cabalDir dirStructure </> "config"
 
--- returns environment dictionary used in Virtual Haskell Environment
--- it's inherited from the current process, but variable
--- GHC_PACKAGE_PATH is altered.
-getVirtualEnvironment :: MyMonad [(String, String)]
-getVirtualEnvironment = do
-  env <- liftIO getEnvironment
+-- returns value of $PATH env variable to be used inside virtual environment
+insidePathVar :: MyMonad String
+insidePathVar = do
+  oldPathVar <- liftIO $ getEnvVar "PATH"
+  let oldPathVarSuffix = case oldPathVar of
+                           Nothing -> ""
+                           Just x  -> ':' : x
   dirStructure <- hseDirStructure
-  return $ ("GHC_PACKAGE_PATH", ghcPackagePath dirStructure) : filter (\(k,_) -> k /= "GHC_PACKAGE_PATH") env
+  ghc          <- asks ghcSource
+  let extraPathElems = case ghc of
+                         System    -> [cabalBinDir dirStructure]
+                         Tarball _ -> [cabalBinDir dirStructure, ghcBinDir dirStructure]
+  return $ intercalate ":" extraPathElems ++ oldPathVarSuffix

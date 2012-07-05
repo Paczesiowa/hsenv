@@ -1,104 +1,102 @@
-module Process ( externalGhcPkgDb
-               , outsideGhcPkg
-               , insideGhcPkg
-               , runProcess
+module Process ( outsideProcess
+               , outsideProcess'
+               , insideProcess
                , ghcPkgDbPathLocation
                ) where
 
-import Types
-import MyMonad
-import Paths
+import           MyMonad
+import           Paths
+import           Types
 
-import Util.IO (readProcessWithExitCodeInEnv, Environment)
+import           Util.IO            (Environment, readProcessWithExitCodeInEnv, which)
 
-import Control.Monad (forM_)
-import Data.Maybe (fromMaybe)
-import System.FilePath ((</>))
-import System.Process (readProcessWithExitCode)
-import System.Exit (ExitCode(..))
+import           Data.Maybe         (fromMaybe)
+import           System.Environment (getEnvironment)
+import           System.Exit        (ExitCode(..))
+import           System.FilePath    ((</>))
+import           System.Process     (readProcessWithExitCode)
 
 runProcess :: Maybe Environment -> FilePath -> [String] -> Maybe String -> MyMonad String
 runProcess env prog args input = do
-  debug $ unwords $ ["Executing:", prog] ++ args
-  indentMessages $ case env of
-    Nothing   -> trace "using inherited variable environment"
-    Just env' -> do
-      trace "using following environment:"
-      indentMessages $ forM_ env' $ \(var,val) -> trace $ var ++ ": " ++ val
-  indentMessages $ case input of
+  case input of
     Nothing  -> return ()
     Just inp -> do
-      trace "using the following input:"
-      indentMessages $ forM_ (lines inp) trace
+      trace "Using the following input:"
+      indentMessages $ mapM_ trace $ lines inp
+
   let execProcess = case env of
-                      Nothing   -> readProcessWithExitCode prog args (fromMaybe "" input)
-                      Just env' -> readProcessWithExitCodeInEnv env' prog args input
+         Nothing   -> readProcessWithExitCode prog args (fromMaybe "" input)
+         Just env' -> readProcessWithExitCodeInEnv env' prog args input
+
   (exitCode, output, errors) <- liftIO execProcess
-  indentMessages $ debug $ case exitCode of
+
+  debug $ case exitCode of
     ExitSuccess         -> "Process exited successfully"
     ExitFailure errCode -> "Process failed with exit code " ++ show errCode
-  indentMessages $ do
-    trace "Process output:"
-    indentMessages $ forM_ (lines output) trace
-  indentMessages $ do
-    trace "Process error output:"
-    indentMessages $ forM_ (lines errors) trace
+
+  case output of
+    "" -> trace "Empty process output"
+    _  -> do
+      trace "Process output:"
+      indentMessages $ mapM_ trace $ lines output
+
+  case errors of
+    "" -> trace "Empty process error output"
+    _  -> do
+      trace "Process error output:"
+      indentMessages $ mapM_ trace $ lines errors
+
   case exitCode of
     ExitSuccess         -> return output
     ExitFailure errCode -> throwError $ MyException $ prog ++ " process failed with status " ++ show errCode
 
--- run outside ghc-pkg tool (uses system's or from ghc installed from tarball)
-outsideGhcPkg :: [String] -> Maybe String -> MyMonad String
-outsideGhcPkg args input = do
-  ghc <- asks ghcSource
-  dirStructure <- hseDirStructure
-  ghcPkg <- case ghc of
-    System    -> do
-      debug "Running system's version of ghc-pkg"
-      return "ghc-pkg"
-    Tarball _ -> do
-      debug "Running ghc-pkg installed from GHC's tarball"
-      return $ ghcDir dirStructure </> "bin" </> "ghc-pkg"
-  indentMessages $ runProcess Nothing ghcPkg args input
+-- run regular process, takes:
+-- * program name, looks for it in $PATH,
+-- * list of arguments
+-- * maybe standard input
+-- returns standard output
+outsideProcess :: String -> [String] -> Maybe String -> MyMonad String
+outsideProcess progName args input = do
+  debug $ unwords $ ["Running outside process:", progName] ++ args
+  indentMessages $ do
+    trace $ unwords ["Looking for", progName, "in $PATH"]
+    program <- liftIO $ which Nothing progName
+    case program of
+      Nothing -> throwError $ MyException $ unwords ["No", progName, "in $PATH"]
+      Just programPath -> do
+        trace $ unwords [progName, "->", programPath]
+        runProcess Nothing programPath args input
+
+outsideProcess' :: String -> [String] -> MyMonad String
+outsideProcess' progName args = outsideProcess progName args Nothing
 
 -- returns path to GHC (installed from tarball) builtin package database
 externalGhcPkgDb :: MyMonad FilePath
 externalGhcPkgDb = do
-  debug "Checking where GHC (installed from tarball) keeps its package database"
-  out <- indentMessages $ outsideGhcPkg ["list"] Nothing
-  indentMessages $ debug "Trying to parse ghc-pkg's output"
-  case lines out of
-    []             -> throwError $ MyException "ghc-pkg returned empty output"
-    lineWithPath:_ ->
-      case lineWithPath of
-        "" -> throwError $ MyException "ghc-pkg's first line of output is empty"
-        _  -> do
-          -- ghc-pkg ends pkg db path with trailing colon
-          -- but only when not run from the terminal
-          let path = init lineWithPath
-          indentMessages $ debug $ "Found: " ++ path
-          return path
-
--- run ghc-pkg tool (uses system's or from ghc installed from tarball)
--- from the inside of Virtual Haskell Environment
-insideGhcPkg :: [String] -> Maybe String -> MyMonad String
-insideGhcPkg args input = do
-  ghc <- asks ghcSource
-  dirStructure <- hseDirStructure
-  env <- getVirtualEnvironment
-  ghcPkg <- case ghc of
-    System    -> do
-      debug "Running system's version of ghc-pkg inside virtual environment"
-      return "ghc-pkg"
-    Tarball _ -> do
-      debug "Running ghc-pkg, installed from GHC's tarball, inside virtual environment"
-      return $ ghcDir dirStructure </> "bin" </> "ghc-pkg"
-  indentMessages $ runProcess (Just env) ghcPkg args input
+  trace "Checking where GHC (installed from tarball) keeps its package database"
+  indentMessages $ do
+    dirStructure <- hseDirStructure
+    let ghcPkg = ghcDir dirStructure </> "bin" </> "ghc-pkg"
+    trace $ unwords ["Running process:", ghcPkg, "list"]
+    ghcPkgOutput <- indentMessages $ runProcess Nothing ghcPkg ["list"] Nothing
+    debug "Trying to parse ghc-pkg's output"
+    case lines ghcPkgOutput of
+      []             -> throwError $ MyException "ghc-pkg returned empty output"
+      lineWithPath:_ ->
+          case lineWithPath of
+            "" -> throwError $ MyException "ghc-pkg's first line of output is empty"
+            _  -> do
+              -- ghc-pkg ends pkg db path with trailing colon
+              -- but only when not run from the terminal
+              let path = init lineWithPath
+              debug $ "Found: " ++ path
+              return path
 
 -- returns value of GHC_PACKAGE_PATH that should be used inside virtual environment
+-- defined in this module, because insideProcess needs it
 ghcPkgDbPathLocation :: MyMonad String
 ghcPkgDbPathLocation = do
-  debug "Determining value of GHC_PACKAGE_PATH to be used inside virtual environment"
+  trace "Determining value of GHC_PACKAGE_PATH to be used inside virtual environment"
   dirStructure <- hseDirStructure
   ghc <- asks ghcSource
   case ghc of
@@ -106,3 +104,40 @@ ghcPkgDbPathLocation = do
     Tarball _ -> do
              externalGhcPkgDbPath <- indentMessages externalGhcPkgDb
              return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath
+
+virtualEnvironment :: MyMonad Environment
+virtualEnvironment = do
+  debug "Calculating unix env dictionary used inside virtual environment"
+  indentMessages $ do
+    env <- liftIO getEnvironment
+    ghcPkgDb <- ghcPkgDbPathLocation
+    debug $ "$GHC_PACKAGE_PATH=" ++ ghcPkgDb
+    pathVar <- insidePathVar
+    debug $ "$PATH=" ++ pathVar
+    let varToBeOverridden var = var `elem` ["GHC_PACKAGE_PATH", "PATH"]
+        strippedEnv = filter (varToBeOverridden . fst) env
+    return $ [("GHC_PACKAGE_PATH", ghcPkgDb), ("PATH", pathVar)] ++ strippedEnv
+
+-- run process from inside the virtual environment, takes:
+-- * program name, looks for it in (in order):
+--    - cabal bin dir (e.g. .hsenv*/cabal/bin)
+--    - ghc bin dir (e.g. .hsenv*/ghc/bin), only when using ghc from tarball
+--    - $PATH
+-- * list of arguments
+-- * maybe standard input
+-- returns standard output
+-- process is run in altered environment (new $GHC_PACKAGE_PATH env var,
+-- adjusted $PATH var)
+insideProcess :: String -> [String] -> Maybe String -> MyMonad String
+insideProcess progName args input = do
+  debug $ unwords $ ["Running inside process:", progName] ++ args
+  indentMessages $ do
+    pathVar <- insidePathVar
+    trace $ unwords ["Looking for", progName, "in", pathVar]
+    program <- liftIO $ which (Just pathVar) progName
+    case program of
+      Nothing -> throwError $ MyException $ unwords ["No", progName, "in", pathVar]
+      Just programPath -> do
+        trace $ unwords [progName, "->", programPath]
+        env <- virtualEnvironment
+        runProcess (Just env) programPath args input

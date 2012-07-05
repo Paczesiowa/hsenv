@@ -3,6 +3,8 @@ module PackageManagement ( Transplantable(..)
                          , parsePkgInfo
                          , getHighestVersion
                          , GhcPkg
+                         , outsideGhcPkg
+                         , insideGhcPkg
                          ) where
 
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
@@ -11,9 +13,17 @@ import Control.Monad (unless)
 
 import Types
 import MyMonad
-import Process (outsideGhcPkg, insideGhcPkg)
+import Process (outsideProcess, insideProcess)
 import Util.Cabal (prettyPkgInfo, prettyVersion)
 import qualified Util.Cabal (parseVersion, parsePkgInfo)
+
+type GhcPkg = [String] -> Maybe String -> MyMonad String
+
+outsideGhcPkg :: GhcPkg
+outsideGhcPkg = outsideProcess "ghc-pkg"
+
+insideGhcPkg :: GhcPkg
+insideGhcPkg = insideProcess "ghc-pkg"
 
 parseVersion :: String -> MyMonad Version
 parseVersion s = case Util.Cabal.parseVersion s of
@@ -43,8 +53,6 @@ getDeps pkgInfo = do
 -- to GHC pkg database inside virtual environment
 class Transplantable a where
     transplantPackage :: a -> MyMonad ()
-
-type GhcPkg = [String] -> Maybe String -> MyMonad String
 
 getHighestVersion :: PackageName -> GhcPkg -> MyMonad Version
 getHighestVersion (PackageName packageName) ghcPkg = do
