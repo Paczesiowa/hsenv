@@ -115,7 +115,7 @@ virtualEnvironment = do
     pathVar <- insidePathVar
     debug $ "$PATH=" ++ pathVar
     let varToBeOverridden var = var `elem` ["GHC_PACKAGE_PATH", "PATH"]
-        strippedEnv = filter (varToBeOverridden . fst) env
+        strippedEnv = filter (not . varToBeOverridden . fst) env
     return $ [("GHC_PACKAGE_PATH", ghcPkgDb), ("PATH", pathVar)] ++ strippedEnv
 
 -- run process from inside the virtual environment, takes:
