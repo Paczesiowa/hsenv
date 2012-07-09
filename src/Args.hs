@@ -5,6 +5,7 @@ module Args (getArgs) where
 import Control.Arrow
 import Data.Char
 import Util.Args
+import System.Directory (getCurrentDirectory)
 import Types
 
 #ifdef cabal
@@ -55,7 +56,14 @@ bootstrapCabalOpt =
            , switchShort = Nothing
            }
 
-nameOpt, ghcOpt :: DynOpt
+parentOpt, nameOpt, ghcOpt :: DynOpt
+
+parentOpt = DynOpt
+            { dynOptName = "parent-dir"
+            , dynOptTemplate = "PATH"
+            , dynOptDescription = "current directory"
+            , dynOptHelp = "Create Virtual Haskell Environment inside PATH"
+            }
 
 nameOpt = DynOpt
           { dynOptName = "name"
@@ -90,6 +98,10 @@ argParser = proc () -> do
                       (True, False)  -> Verbose
                       (False, False) -> Quiet
   name <- getOpt nameOpt -< ()
+  parentFlag <- getOpt parentOpt -< ()
+  parent <- case parentFlag of
+           Just parent' -> returnA -< parent'
+           Nothing -> liftIO' getCurrentDirectory -< ()
   ghcFlag <- getOpt ghcOpt -< ()
   noPS1' <- getOpt noPS1Opt -< ()
   let ghc = case ghcFlag of
@@ -106,6 +118,7 @@ argParser = proc () -> do
   make <- getOpt makeOpt -< ()
   returnA -< Options{ verbosity       = verboseness
                    , skipSanityCheck = skipSanityCheckFlag
+                   , envParentDir    = parent
                    , hsEnvName       = name
                    , ghcSource       = ghc
                    , makeCmd         = make
@@ -113,6 +126,7 @@ argParser = proc () -> do
                    , noPS1           = noPS1'
                    , cabalBootstrap  = bootstrapCabalFlag
                    }
+    where liftIO' = liftIO . const
 
 getArgs :: IO Options
 getArgs = parseArgs argParser versionString outro

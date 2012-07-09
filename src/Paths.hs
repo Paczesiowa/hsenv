@@ -7,7 +7,6 @@ module Paths ( hseDirStructure
 
 import Data.List (intercalate)
 import System.FilePath ((</>))
-import System.Directory (getCurrentDirectory)
 
 import Util.IO (getEnvVar)
 import Types
@@ -17,9 +16,9 @@ import HsenvMonad
 -- inside virtual environment dir structure
 hseDirStructure :: Hsenv DirStructure
 hseDirStructure = do
-  cwd <- liftIO getCurrentDirectory
+  parentDir <- asks envParentDir
   dirName <- dotDirName
-  let hsEnvLocation    = cwd
+  let hsEnvLocation    = parentDir
       hsEnvDirLocation = hsEnvLocation </> dirName
       cabalDirLocation = hsEnvDirLocation </> "cabal"
       ghcDirLocation   = hsEnvDirLocation </> "ghc"
