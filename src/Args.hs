@@ -49,7 +49,14 @@ bootstrapCabalOpt =
            , switchShort = Nothing
            }
 
-nameOpt, ghcOpt :: DynOpt
+parentOpt, nameOpt, ghcOpt :: DynOpt
+
+parentOpt = DynOpt
+            { dynOptName = "parent-dir"
+            , dynOptTemplate = "PATH"
+            , dynOptDescription = "current directory"
+            , dynOptHelp = "Create Virtual Haskell Environment inside PATH"
+            }
 
 nameOpt = DynOpt
           { dynOptName = "name"
@@ -83,6 +90,10 @@ argParser = proc () -> do
                       (_, True)      -> VeryVerbose
                       (True, False)  -> Verbose
                       (False, False) -> Quiet
+  parentFlag <- getOpt parentOpt -< ()
+  parent <- case parentFlag of
+           Just parent' -> returnA -< parent'
+           Nothing -> liftIO' getCurrentDirectory -< ()
   nameFlag <- getOpt nameOpt -< ()
   name <- case nameFlag of
            Just name' -> returnA -< name'
@@ -99,6 +110,7 @@ argParser = proc () -> do
   make <- getOpt makeOpt -< ()
   returnA -< Options{ verbosity       = verboseness
                    , skipSanityCheck = skipSanityCheckFlag
+                   , envParentDir    = parent
                    , hsEnvName       = name
                    , ghcSource       = ghc
                    , makeCmd         = make

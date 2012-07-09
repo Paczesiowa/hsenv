@@ -19,6 +19,7 @@ data Verbosity = Quiet
 
 data Options = Options { verbosity       :: Verbosity
                        , skipSanityCheck :: Bool
+                       , envParentDir    :: FilePath
                        , hsEnvName       :: String -- Virtual Haskell Environment name
                        , ghcSource       :: GhcSource
                        , makeCmd         :: String -- make substitute used for 'make install' of external GHC
