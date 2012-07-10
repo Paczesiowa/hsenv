@@ -2,7 +2,7 @@ module CabalBootstrap (bootstrapCabal) where
 
 import System.Directory (doesFileExist, createDirectoryIfMissing, getCurrentDirectory, getAppUserDataDirectory, setCurrentDirectory)
 import System.FilePath ((</>))
-import Network.URI
+import Network.URI (URI(..), URIAuth(..))
 import Network.HTTP
 import Codec.Compression.GZip (decompress)
 import qualified Data.ByteString.Lazy as BS
@@ -123,13 +123,10 @@ bootstrapCabal = do
     let pkgDir = cwd </> "cabal-install-bundle-" ++ prettyVersion cibVersion
         setup  = pkgDir </> "Setup.hs"
     liftIO $ setCurrentDirectory pkgDir
-    _ <- insideProcess "runghc" [ setup
-                               , "configure"
-                               , "--prefix=" ++ prefix
-                               , "--user"
-                               ] Nothing
+    let cabalSetup args = insideProcess "runghc" (setup:args) Nothing
+    _ <- cabalSetup ["configure", "--prefix=" ++ prefix, "--user"]
     debug "Building cabal-install-bundle"
-    _ <- insideProcess "runghc" [ setup, "build"] Nothing
+    _ <- cabalSetup ["build"]
     debug "Installing cabal-install-bundle"
-    _ <- insideProcess "runghc" [ setup, "install"] Nothing
+    _ <- cabalSetup ["install"]
     return ()
