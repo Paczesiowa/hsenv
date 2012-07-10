@@ -10,6 +10,7 @@ module Actions ( cabalUpdate
                , installGhc
                , createDirStructure
                , bootstrapCabal
+               , initDotHsenvDir
                ) where
 
 import Control.Monad
@@ -347,3 +348,8 @@ installReleasedGhc tag = do
 
 platform :: String
 platform = intercalate "-" [arch, if os == "darwin" then "apple" else "unknown", os]
+
+initDotHsenvDir :: Hsenv ()
+initDotHsenvDir = do
+  dir <- liftIO $ getAppUserDataDirectory "hsenv"
+  liftIO $ createDirectoryIfMissing True dir

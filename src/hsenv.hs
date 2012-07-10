@@ -28,6 +28,7 @@ main = do
 
 realMain :: Hsenv ()
 realMain = do
+  initDotHsenvDir
   skipSanityCheckFlag <- asks skipSanityCheck
   if skipSanityCheckFlag then
       info "WARNING: sanity checks are disabled."
