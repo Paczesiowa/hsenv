@@ -7,6 +7,7 @@ module Actions ( cabalUpdate
                , installGhc
                , createDirStructure
                , bootstrapCabal
+               , initDotHsenvDir
                ) where
 
 import System.Directory
@@ -233,3 +234,8 @@ installExternalGhc tarballPath = do
     debug $ "Installing GHC with " ++ make ++ " install"
     _ <- indentMessages $ outsideProcess' make ["install"]
     return ()
+
+initDotHsenvDir :: MyMonad ()
+initDotHsenvDir = do
+  dir <- liftIO $ getAppUserDataDirectory "hsenv"
+  liftIO $ createDirectoryIfMissing True dir
