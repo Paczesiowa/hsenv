@@ -17,6 +17,7 @@ import System.Exit (ExitCode)
 import Data.List.Split (splitOn)
 import Control.Monad (foldM)
 import System.FilePath ((</>))
+import Control.Exception (catch)
 
 -- Computation getEnvVar var returns Just the value of the environment variable var,
 -- or Nothing if the environment variable does not exist
