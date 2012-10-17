@@ -1,0 +1,29 @@
+#!/bin/sh
+
+PATH_ELEMS="$(echo ${PATH} | tr -s ':' '\n')"
+
+ORIG_GHC_BINARY=""
+
+for PATH_ELEM in ${PATH_ELEMS}; do
+    GHC_CANDIDATE="${PATH_ELEM}/ghc"
+    if command -v "${GHC_CANDIDATE}" > /dev/null 2> /dev/null; then
+        if [ "${0}" != "${GHC_CANDIDATE}" ]; then
+            if [ -z "${GHC_PKG_BINARY}" ]; then
+                ORIG_GHC_BINARY="${GHC_CANDIDATE}"
+            fi
+        fi
+    fi
+done
+
+if [ -z "${ORIG_GHC_BINARY}" ]; then
+    echo "ghci wrapper: Couldn't find real ghc-pkg program"
+    exit 1
+fi
+
+
+GHC_PACKAGE_DB_LIST="$(cat <HSENV_DIR>/ghc_package_path_var)"
+GHC_PACKAGE_DB="-package-db "`echo ${GHC_PACKAGE_DB_LIST} | sed 's/ / -package-db /g'`
+
+
+exec "${ORIG_GHC_BINARY}" ${GHC_PACKAGE_DB} "${@}"
+

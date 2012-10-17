@@ -21,7 +21,6 @@ if [ -z "${ORIG_GHC_PKG_BINARY}" ]; then
 fi
 
 
-GHC_PKG_COMMAND="$(echo ${@} | tr -s ' ' '\n' | grep -E '[a-z]' | grep -Ev '^-'  | head -n 1)"
 GHC_PKG_PACKAGE_DB_LIST="$(cat <HSENV_DIR>/ghc_package_path_var)"
 GHC_PKG_PACKAGE_DB="-f "`echo ${GHC_PKG_PACKAGE_DB_LIST} | sed 's/ /\ -f /g'`
 
