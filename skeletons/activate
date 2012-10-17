@@ -45,7 +45,7 @@ PATH_PREPENDIX="$(cat <HSENV_DIR>/path_var_prependix)"
 export PATH="${PATH_PREPENDIX}:${PATH}"
 unset -v PATH_PREPENDIX
 
-export GHC_PACKAGE_PATH="$(cat <HSENV_DIR>/ghc_package_path_var)"
+
 export PS1="(${HSENV_NAME})${PS1}"
 
 if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then

@@ -1,6 +1,7 @@
 module Actions ( cabalUpdate
                , installCabalConfig
                , installCabalWrapper
+	       , installGhcPkgWrapper
                , installActivateScript
                , copyBaseSystem
                , initGhcDb
@@ -72,6 +73,21 @@ installCabalWrapper = do
     indentMessages $ mapM_ trace $ lines cabalWrapperContents
   liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
+
+-- install ghc-pkg wrapper (in bin/ directory) inside virtual environment dir structure
+installGhcPkgWrapper :: MyMonad ()
+installGhcPkgWrapper = do
+  dirStructure <- hseDirStructure
+  let ghcpkgWrapper = hsEnvBinDir dirStructure </> "ghc-pkg"
+  info $ concat [ "Installing ghc-pkg wrapper at"
+		,ghcpkgWrapper
+		]
+  let ghcpkgWrapperContents = substs [("<HSENV_DIR>", hsEnvDir dirStructure)] ghcpkgWrapperSkel
+  indentMessages $ do
+    trace "ghc-pkg wrapper contents:"
+    indentMessages $ mapM_ trace $ lines ghcpkgWrapperContents
+  liftIO $ writeFile ghcpkgWrapper ghcpkgWrapperContents
+  liftIO $ makeExecutable ghcpkgWrapper
 
 installActivateScriptSupportFiles :: MyMonad ()
 installActivateScriptSupportFiles = do

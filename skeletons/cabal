@@ -34,4 +34,6 @@ for CABAL_BUILDABLE_COMMAND in ${CABAL_BUILDABLE_COMMANDS}; do
     fi
 done
 
+
 exec "${ORIG_CABAL_BINARY}" --config-file="${CABAL_CONFIG}" ${CABAL_BUILDDIR_ARG} "${@}"
+

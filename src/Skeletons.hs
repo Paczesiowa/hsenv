@@ -12,5 +12,8 @@ activateSkel = unpack $(embedFile $ "skeletons" </> "activate")
 cabalWrapperSkel :: String
 cabalWrapperSkel = unpack $(embedFile $ "skeletons" </> "cabal")
 
+ghcpkgWrapperSkel:: String
+ghcpkgWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghc-pkg")
+
 cabalConfigSkel :: String
 cabalConfigSkel = unpack $(embedFile $ "skeletons" </> "cabal_config")
