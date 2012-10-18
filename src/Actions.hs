@@ -24,7 +24,7 @@ import Paths
 import PackageManagement
 import Process
 import Util.Template (substs)
-import Util.IO (makeExecutable, createTemporaryDirectory)
+import Util.IO (makeExecutable, createTemporaryDirectory, which)
 import Skeletons
 
 -- update cabal package info inside Virtual Haskell Environment
@@ -184,14 +184,35 @@ installCabalConfig = do
           cabalInstallDir <- liftIO $ getAppUserDataDirectory "cabal"
           return $ cabalInstallDir </> "packages"
   info $ "Installing cabal config at " ++ cabalConfig
+-- always use a specific compiler to avoid cabal using ghc wrapper
+  program <- ghcbinPath
+  compilerdir <- case program of
+	Nothing -> do
+		_ <- throwError $ MyException $ unwords ["No", "ghc", "in $PATH"]
+		return ""
+	Just pth -> do
+		return pth
   let cabalConfigContents = substs [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
                                    , ("<CABAL_DIR>", cabalDir dirStructure)
                                    , ("<HACKAGE_CACHE>", hackageCache)
+                                   , ("<COMPILER_DIR>", compilerdir)
                                    ] cabalConfigSkel
   indentMessages $ do
     trace "cabal config contents:"
     indentMessages $ mapM_ trace $ lines cabalConfigContents
   liftIO $ writeFile cabalConfig cabalConfigContents
+
+ghcbinPath::MyMonad (Maybe FilePath)
+ghcbinPath= do
+	dirStructure <- hseDirStructure
+	ghc <- asks ghcSource
+	case ghc of
+		System -> do
+			ghcbinpath <- liftIO $ which Nothing "ghc"
+			return ghcbinpath
+		Tarball _ -> do
+			return $ Just $ ghcDir dirStructure </> "bin" </> "ghc"
+
 
 createDirStructure :: MyMonad ()
 createDirStructure = do
