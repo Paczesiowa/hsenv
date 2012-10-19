@@ -1,6 +1,9 @@
 module Actions ( cabalUpdate
                , installCabalConfig
                , installCabalWrapper
+	       , installGhcPkgWrapper
+	       , installGhciWrapper
+	       , installGhcWrapper
                , installActivateScript
                , copyBaseSystem
                , initGhcDb
@@ -21,7 +24,7 @@ import Paths
 import PackageManagement
 import Process
 import Util.Template (substs)
-import Util.IO (makeExecutable, createTemporaryDirectory)
+import Util.IO (makeExecutable, createTemporaryDirectory, which)
 import Skeletons
 
 -- update cabal package info inside Virtual Haskell Environment
@@ -72,6 +75,64 @@ installCabalWrapper = do
     indentMessages $ mapM_ trace $ lines cabalWrapperContents
   liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
+
+-- install ghc-pkg wrapper (in bin/ directory) inside virtual environment dir structure
+installGhcPkgWrapper :: MyMonad ()
+installGhcPkgWrapper = do
+  dirStructure <- hseDirStructure
+  let ghcpkgWrapper = hsEnvBinDir dirStructure </> "ghc-pkg"
+  info $ concat [ "Installing ghc-pkg wrapper at"
+		,ghcpkgWrapper
+		]
+  let ghcpkgWrapperContents = substs [("<HSENV_DIR>", hsEnvDir dirStructure)] ghcpkgWrapperSkel
+  indentMessages $ do
+    trace "ghc-pkg wrapper contents:"
+    indentMessages $ mapM_ trace $ lines ghcpkgWrapperContents
+  liftIO $ writeFile ghcpkgWrapper ghcpkgWrapperContents
+  liftIO $ makeExecutable ghcpkgWrapper
+
+-- install ghci wrapper (in bin/ directory) inside virtual environment dir structure
+installGhciWrapper :: MyMonad ()
+installGhciWrapper = do
+  dirStructure <- hseDirStructure
+  let ghciWrapper = hsEnvBinDir dirStructure </> "ghci"
+  info $ concat [ "Installing ghci wrapper at"
+		,ghciWrapper
+		]
+  let ghciWrapperContents = substs [("<HSENV_DIR>", hsEnvDir dirStructure)] ghciWrapperSkel
+  indentMessages $ do
+    trace "ghc-pkg wrapper contents:"
+    indentMessages $ mapM_ trace $ lines ghciWrapperContents
+  liftIO $ writeFile ghciWrapper ghciWrapperContents
+  liftIO $ makeExecutable ghciWrapper
+
+-- install ghc wrapper (in bin/ directory) inside virtual environment dir structure
+-- also install runghc warpper (in bin/ directory) inside virtual environment dir structure
+installGhcWrapper :: MyMonad ()
+installGhcWrapper = do
+  dirStructure <- hseDirStructure
+  let ghcWrapper = hsEnvBinDir dirStructure </> "ghc"
+  info $ concat [ "Installing ghc wrapper at"
+		,ghcWrapper
+		]
+  let ghcWrapperContents = substs [("<HSENV_DIR>", hsEnvDir dirStructure)] ghcWrapperSkel
+  indentMessages $ do
+    trace "ghc-pkg wrapper contents:"
+    indentMessages $ mapM_ trace $ lines ghcWrapperContents
+  liftIO $ writeFile ghcWrapper ghcWrapperContents
+  liftIO $ makeExecutable ghcWrapper
+
+  let runghcWrapper = hsEnvBinDir dirStructure </> "runghc"
+  info $ concat [ "Installing runghc wrapper at"
+		,runghcWrapper
+		]
+  let runghcWrapperContents = substs [("<HSENV_DIR>", hsEnvDir dirStructure)] runghcWrapperSkel
+  indentMessages $ do
+    trace "runghc wrapper contents:"
+    indentMessages $ mapM_ trace $ lines runghcWrapperContents
+  liftIO $ writeFile runghcWrapper runghcWrapperContents
+  liftIO $ makeExecutable runghcWrapper
+  
 
 installActivateScriptSupportFiles :: MyMonad ()
 installActivateScriptSupportFiles = do
@@ -136,14 +197,35 @@ installCabalConfig = do
           cabalInstallDir <- liftIO $ getAppUserDataDirectory "cabal"
           return $ cabalInstallDir </> "packages"
   info $ "Installing cabal config at " ++ cabalConfig
+-- always use a specific compiler to avoid cabal using ghc wrapper
+  program <- ghcbinPath
+  compilerdir <- case program of
+	Nothing -> do
+		_ <- throwError $ MyException $ unwords ["No", "ghc", "in $PATH"]
+		return ""
+	Just pth -> do
+		return pth
   let cabalConfigContents = substs [ ("<GHC_PACKAGE_PATH>", ghcPackagePath dirStructure)
                                    , ("<CABAL_DIR>", cabalDir dirStructure)
                                    , ("<HACKAGE_CACHE>", hackageCache)
+                                   , ("<COMPILER_DIR>", compilerdir)
                                    ] cabalConfigSkel
   indentMessages $ do
     trace "cabal config contents:"
     indentMessages $ mapM_ trace $ lines cabalConfigContents
   liftIO $ writeFile cabalConfig cabalConfigContents
+
+ghcbinPath::MyMonad (Maybe FilePath)
+ghcbinPath= do
+	dirStructure <- hseDirStructure
+	ghc <- asks ghcSource
+	case ghc of
+		System -> do
+			ghcbinpath <- liftIO $ which Nothing "ghc"
+			return ghcbinpath
+		Tarball _ -> do
+			return $ Just $ ghcDir dirStructure </> "bin" </> "ghc"
+
 
 createDirStructure :: MyMonad ()
 createDirStructure = do
@@ -212,7 +294,9 @@ installGhc = do
   info "Installing GHC"
   ghc <- asks ghcSource
   case ghc of
-    System              -> indentMessages $ debug "Using system version of GHC - nothing to install."
+    System              -> do
+	installGhcWrapper
+	indentMessages $ debug "Using system version of GHC - nothing to install."
     Tarball tarballPath -> indentMessages $ installExternalGhc tarballPath
 
 installExternalGhc :: FilePath -> MyMonad ()
