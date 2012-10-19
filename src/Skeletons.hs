@@ -21,5 +21,8 @@ ghciWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghci")
 ghcWrapperSkel:: String
 ghcWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghc")
 
+runghcWrapperSkel::String
+runghcWrapperSkel = unpack $(embedFile $ "skeletons" </> "runghc")
+
 cabalConfigSkel :: String
 cabalConfigSkel = unpack $(embedFile $ "skeletons" </> "cabal_config")

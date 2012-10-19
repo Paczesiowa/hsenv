@@ -107,6 +107,7 @@ installGhciWrapper = do
   liftIO $ makeExecutable ghciWrapper
 
 -- install ghc wrapper (in bin/ directory) inside virtual environment dir structure
+-- also install runghc warpper (in bin/ directory) inside virtual environment dir structure
 installGhcWrapper :: MyMonad ()
 installGhcWrapper = do
   dirStructure <- hseDirStructure
@@ -120,6 +121,18 @@ installGhcWrapper = do
     indentMessages $ mapM_ trace $ lines ghcWrapperContents
   liftIO $ writeFile ghcWrapper ghcWrapperContents
   liftIO $ makeExecutable ghcWrapper
+
+  let runghcWrapper = hsEnvBinDir dirStructure </> "runghc"
+  info $ concat [ "Installing runghc wrapper at"
+		,runghcWrapper
+		]
+  let runghcWrapperContents = substs [("<HSENV_DIR>", hsEnvDir dirStructure)] runghcWrapperSkel
+  indentMessages $ do
+    trace "runghc wrapper contents:"
+    indentMessages $ mapM_ trace $ lines runghcWrapperContents
+  liftIO $ writeFile runghcWrapper runghcWrapperContents
+  liftIO $ makeExecutable runghcWrapper
+  
 
 installActivateScriptSupportFiles :: MyMonad ()
 installActivateScriptSupportFiles = do
