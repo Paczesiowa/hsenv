@@ -34,4 +34,14 @@ for CABAL_BUILDABLE_COMMAND in ${CABAL_BUILDABLE_COMMANDS}; do
     fi
 done
 
-exec "${ORIG_CABAL_BINARY}" --config-file="${CABAL_CONFIG}" ${CABAL_BUILDDIR_ARG} "${@}"
+CABAL_CONFIGURE_COMMANDS="configure install upgrade"
+
+for CABAL_CONFIGURE_COMMAND in ${CABAL_CONFIGURE_COMMANDS}; do
+    if [ "${CABAL_CONFIGURE_COMMAND}" = "${CABAL_COMMAND}" ]; then
+        CABAL_BUILDDIR_ARG="${CABAL_BUILDDIR_ARG} ${PACKAGE_DB}"
+    fi
+done
+
+exec "${ORIG_CABAL_BINARY}"            \
+       --config-file="${CABAL_CONFIG}" \
+       ${CABAL_BUILDDIR_ARG} "${@}"

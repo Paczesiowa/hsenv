@@ -45,7 +45,8 @@ PATH_PREPENDIX="$(cat <HSENV_DIR>/path_var_prependix)"
 export PATH="${PATH_PREPENDIX}:${PATH}"
 unset -v PATH_PREPENDIX
 
-export GHC_PACKAGE_PATH="$(cat <HSENV_DIR>/ghc_package_path_var)"
+GHC_PACKAGE_PATH_REPLACEMENT="$(cat <HSENV_DIR>/ghc_package_path_var)"
+export PACKAGE_DB=--package-db=`echo ${GHC_PACKAGE_PATH_REPLACEMENT} | sed s/:/\ --package-db=/`
 export PS1="(${HSENV_NAME})${PS1}"
 
 if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
