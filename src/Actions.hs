@@ -2,18 +2,24 @@ module Actions ( cabalUpdate
                , installCabalConfig
                , installCabalWrapper
                , installActivateScript
+               , installGHCWrapper
+               , installGHCiWrapper
+               , installProgSymlinks
                , copyBaseSystem
                , initGhcDb
                , installGhc
                , createDirStructure
                ) where
 
-import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory, doesFileExist)
+import Control.Monad
+import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory, doesFileExist, findExecutable)
 import System.FilePath ((</>))
+import System.Posix hiding (createDirectory, version)
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
 import Safe (lastMay)
 import Data.List (intercalate)
+import Data.Maybe
 
 import MyMonad
 import Types
@@ -144,6 +150,65 @@ installCabalConfig = do
     trace "cabal config contents:"
     indentMessages $ mapM_ trace $ lines cabalConfigContents
   liftIO $ writeFile cabalConfig cabalConfigContents
+
+installGHCWrapper :: MyMonad ()
+installGHCWrapper = do
+    ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
+    dirStructure <- hseDirStructure
+    let ghcWrapperContents =
+            substs [("<GHC_PACKAGE_PATH>", ghcPkgDbPath)] ghcWrapperSkel
+        ghcWrapper = hsEnvBinDir dirStructure </> "ghc"
+    liftIO $ writeFile ghcWrapper ghcWrapperContents
+    liftIO $ makeExecutable ghcWrapper
+
+installGHCiWrapper :: MyMonad ()
+installGHCiWrapper = do
+    ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
+    dirStructure <- hseDirStructure
+    let ghciWrapperContents =
+            substs [("<GHC_PACKAGE_PATH>", ghcPkgDbPath)] ghciWrapperSkel
+        ghciWrapper = hsEnvBinDir dirStructure </> "ghci"
+    liftIO $ writeFile ghciWrapper ghciWrapperContents
+    liftIO $ makeExecutable ghciWrapper
+
+installProgSymlinks :: MyMonad ()
+installProgSymlinks = mapM_ installSymlink extraProgs
+
+extraProgs :: [String]
+extraProgs = [ "alex"
+             , "ar"
+             , "c2hs"
+             , "cpphs"
+             , "ffihugs"
+             , "gcc"
+             , "ghc-pkg"
+             , "greencard"
+             , "haddock"
+             , "happy"
+             , "hmake"
+             , "hpc"
+             , "hsc2hs"
+             , "hscolour"
+             , "hugs"
+             , "jhc"
+             , "ld"
+             , "lhc"
+             , "lhc-pkg"
+             , "nhc98"
+             , "pkg-config"
+             , "ranlib"
+             , "strip"
+             , "tar"
+             , "uhc"
+             ]
+
+installSymlink :: String -> MyMonad ()
+installSymlink prog = do
+    mProgLoc <- liftIO $ findExecutable prog
+    when (isJust mProgLoc) $ do
+        let Just progLoc = mProgLoc
+        dirStructure <- hseDirStructure
+        liftIO $ createSymbolicLink progLoc $ hsEnvBinDir dirStructure </> prog
 
 createDirStructure :: MyMonad ()
 createDirStructure = do
