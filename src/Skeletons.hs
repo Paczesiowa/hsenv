@@ -14,3 +14,9 @@ cabalWrapperSkel = unpack $(embedFile $ "skeletons" </> "cabal")
 
 cabalConfigSkel :: String
 cabalConfigSkel = unpack $(embedFile $ "skeletons" </> "cabal_config")
+
+ghcWrapperSkel :: String
+ghcWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghc")
+
+ghciWrapperSkel :: String
+ghciWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghci")
