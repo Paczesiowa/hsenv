@@ -39,6 +39,10 @@ realMain = do
   installCabalConfig
   installActivateScript
   installCabalWrapper
+  installGHCWrapper
+  installGHCiWrapper
+  installGHCPkgWrapper
+  installProgSymlinks
   cabalUpdate
   info ""
   dotDir <- dotDirName
