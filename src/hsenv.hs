@@ -41,6 +41,7 @@ realMain = do
   installCabalWrapper
   installGHCWrapper
   installGHCiWrapper
+  installGHCPkgWrapper
   installProgSymlinks
   cabalUpdate
   info ""
