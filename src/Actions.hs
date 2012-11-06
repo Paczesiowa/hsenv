@@ -4,6 +4,7 @@ module Actions ( cabalUpdate
                , installActivateScript
                , installGHCWrapper
                , installGHCiWrapper
+               , installGHCPkgWrapper
                , installProgSymlinks
                , copyBaseSystem
                , initGhcDb
@@ -171,6 +172,16 @@ installGHCiWrapper = do
     liftIO $ writeFile ghciWrapper ghciWrapperContents
     liftIO $ makeExecutable ghciWrapper
 
+installGHCPkgWrapper :: MyMonad ()
+installGHCPkgWrapper = do
+    ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
+    dirStructure <- hseDirStructure
+    let ghcPkgWrapperContents =
+            substs [("<GHC_PACKAGE_PATH>", ghcPkgDbPath)] ghcPkgWrapperSkel
+        ghcPkgWrapper = hsEnvBinDir dirStructure </> "ghc-pkg"
+    liftIO $ writeFile ghcPkgWrapper ghcPkgWrapperContents
+    liftIO $ makeExecutable ghcPkgWrapper
+
 installProgSymlinks :: MyMonad ()
 installProgSymlinks = mapM_ installSymlink extraProgs
 
@@ -181,7 +192,6 @@ extraProgs = [ "alex"
              , "cpphs"
              , "ffihugs"
              , "gcc"
-             , "ghc-pkg"
              , "greencard"
              , "haddock"
              , "happy"
