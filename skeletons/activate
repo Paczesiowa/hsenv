@@ -46,7 +46,10 @@ export PATH="${PATH_PREPENDIX}:${PATH}"
 unset -v PATH_PREPENDIX
 
 export GHC_PACKAGE_PATH="$(cat <HSENV_DIR>/ghc_package_path_var)"
-export PS1="(${HSENV_NAME})${PS1}"
+
+if [ -z "$HSENV_DISABLE_PROMPT" ] ; then
+    export PS1="(${HSENV_NAME})${PS1}"
+fi
 
 if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
     hash -r
