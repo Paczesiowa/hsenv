@@ -39,10 +39,7 @@ realMain = do
   installCabalConfig
   installActivateScript
   installCabalWrapper
-  installGHCWrapper
-  installGHCiWrapper
-  installGHCPkgWrapper
-  installRunGHCWrapper
+  installSimpleWrappers
   installProgSymlinks
   cabalUpdate
   info ""
