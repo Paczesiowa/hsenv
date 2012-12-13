@@ -23,3 +23,6 @@ ghciWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghci")
 
 ghcPkgWrapperSkel :: String
 ghcPkgWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghc-pkg")
+
+runghcWrapperSkel :: String
+runghcWrapperSkel = unpack $(embedFile $ "skeletons" </> "runghc")
