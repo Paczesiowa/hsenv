@@ -86,7 +86,7 @@ Tested-with:         GHC == 6.12.3, GHC == 7.0.4
 
 Data-files:          hsenv.el, README.md
 
-Extra-source-files:  skeletons/activate, skeletons/cabal, skeletons/cabal_config
+Extra-source-files:  skeletons/activate, skeletons/cabal, skeletons/cabal_config, skeletons/ghc, skeletons/ghc-pkg, skeletons/ghci, skeletons/runghc
 
 Cabal-version:       >=1.6
 
@@ -113,8 +113,19 @@ Executable hsenv
                , unix >= 2.0 && < 2.7
 
   Other-modules: Util.Cabal
+               , Util.Args
+               , Util.Args.Args
+               , Util.Args.ArgArrow
+               , Util.Args.ArgDescr
+               , Util.Args.RawArgs
+               , Util.Args.GetOpt
+               , Util.Args.Usage
+               , Util.List
+               , Util.StaticArrowT
+               , Util.String
                , Util.Template
                , Util.IO
+               , Util.WordWrap
                , Skeletons
                , Types
                , MyMonad
