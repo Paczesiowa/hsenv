@@ -20,4 +20,4 @@ if [ -z "${ORIG_RUNGHC_BINARY}" ]; then
     exit 1
 fi
 
-exec "$ORIG_RUNGHC_BINARY" -no-user-package-db -package-db=<GHC_PACKAGE_PATH> "$@"
+exec "$ORIG_RUNGHC_BINARY" ${PACKAGE_DB_FOR_GHC} "$@"

@@ -31,6 +31,9 @@ deactivate_hsenv() {
     export "PS1"="${HSENV_PS1_BACKUP}"
     unset -v "HSENV_PS1_BACKUP"
 
+    unset -v PACKAGE_DB_FOR_CABAL
+    unset -v PACKAGE_DB_FOR_GHC_PKG
+    unset -v PACKAGE_DB_FOR_GHC
     unset -v HSENV
     unset -v HSENV_NAME
     unset -v GHC_PACKAGE_PATH
@@ -45,9 +48,33 @@ PATH_PREPENDIX="$(cat <HSENV_DIR>/path_var_prependix)"
 export PATH="${PATH_PREPENDIX}:${PATH}"
 unset -v PATH_PREPENDIX
 
-GHC_PACKAGE_PATH_REPLACEMENT="$(cat <HSENV_DIR>/ghc_package_path_var)"
-export PACKAGE_DB=--package-db=`echo ${GHC_PACKAGE_PATH_REPLACEMENT} | sed s/:/\ --package-db=/`
+unset -v PACKAGE_DB_FOR_GHC
+ghc --version > /dev/null
+if [ "$?" -ne 0 ]; then
+    echo "Failed to get ghc version. Deactivating environment..."
+    deactivate_hsenv
+    exit 1
+fi
+
+GHC_VERSION_OUTPUT="$(ghc --version)"
+GHC_VERSION_NUMBER="${GHC_VERSION_OUTPUT##* }"
+
+if [ "${GHC_VERSION_NUMBER}" \< "7.6.1" ]; then
+    PKG_DB_OPT_SUFFIX="conf"; else
+    PKG_DB_OPT_SUFFIX="db"
+fi
+
+GHC_PACKAGE_PATH_REPLACEMENT="$(cat /home/duplode/Software/haskell/Prefixes/hakyll/.hsenv_hakyll/ghc_package_path_var)"
+export PACKAGE_DB_FOR_CABAL=--package-db=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ --package-db=/`
+export PACKAGE_DB_FOR_GHC_PKG=--package-"${PKG_DB_OPT_SUFFIX}"=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ --package-"${PKG_DB_OPT_SUFFIX}"=/`
+export PACKAGE_DB_FOR_GHC=-package-"${PKG_DB_OPT_SUFFIX}"=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ -package-"${PKG_DB_OPT_SUFFIX}"=/`
+
 export PS1="(${HSENV_NAME})${PS1}"
+
+unset -v GHC_VERSION_OUTPUT
+unset -v GHC_VERSION_NUMBER
+unset -v PKG_DB_OPT_SUFFIX
+unset -v GHC_PACKAGE_PATH_REPLACEMENT
 
 if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
     hash -r
