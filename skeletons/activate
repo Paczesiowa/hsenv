@@ -64,7 +64,7 @@ if [ "${GHC_VERSION_NUMBER}" \< "7.6.1" ]; then
     PKG_DB_OPT_SUFFIX="db"
 fi
 
-GHC_PACKAGE_PATH_REPLACEMENT="$(cat /home/duplode/Software/haskell/Prefixes/hakyll/.hsenv_hakyll/ghc_package_path_var)"
+GHC_PACKAGE_PATH_REPLACEMENT="$(cat <HSENV_DIR>/ghc_package_path_var)"
 export PACKAGE_DB_FOR_CABAL=--package-db=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ --package-db=/`
 export PACKAGE_DB_FOR_GHC_PKG=--package-"${PKG_DB_OPT_SUFFIX}"=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ --package-"${PKG_DB_OPT_SUFFIX}"=/`
 export PACKAGE_DB_FOR_GHC=-package-"${PKG_DB_OPT_SUFFIX}"=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ -package-"${PKG_DB_OPT_SUFFIX}"=/`
