@@ -15,11 +15,21 @@ cabalWrapperSkel = unpack $(embedFile $ "skeletons" </> "cabal")
 cabalConfigSkel :: String
 cabalConfigSkel = unpack $(embedFile $ "skeletons" </> "cabal_config")
 
-ghcWrapperSkel :: String
-ghcWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghc")
+simpleWrappers :: [(String, String)]
+simpleWrappers = [ ghcWrapperSkel
+                 , ghciWrapperSkel
+                 , ghcPkgWrapperSkel
+                 , runghcWrapperSkel
+                 ]
 
-ghciWrapperSkel :: String
-ghciWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghci")
+ghcWrapperSkel :: (String, String)
+ghcWrapperSkel = ("ghc", unpack $(embedFile $ "skeletons" </> "ghc"))
 
-ghcPkgWrapperSkel :: String
-ghcPkgWrapperSkel = unpack $(embedFile $ "skeletons" </> "ghc-pkg")
+ghciWrapperSkel :: (String, String)
+ghciWrapperSkel = ("ghci", unpack $(embedFile $ "skeletons" </> "ghci"))
+
+ghcPkgWrapperSkel :: (String, String)
+ghcPkgWrapperSkel = ("ghc-pkg", unpack $(embedFile $ "skeletons" </> "ghc-pkg"))
+
+runghcWrapperSkel :: (String, String)
+runghcWrapperSkel = ("runghc", unpack $(embedFile $ "skeletons" </> "runghc"))
