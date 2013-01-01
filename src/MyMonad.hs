@@ -18,7 +18,7 @@ module MyMonad ( MyMonad
 
 import Types
 
-import Control.Exception (IOException, catch)
+import Control.Exception as Exception (IOException, catch)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
 import Control.Monad.Writer (WriterT, MonadWriter, runWriterT, tell)
@@ -34,7 +34,7 @@ newtype MyMonad a = MyMonad (StateT MyState (ReaderT Options (ErrorT MyException
 
 instance MonadIO MyMonad where
     liftIO m = MyMonad $ do
-                 x <- liftIO $ (Right `fmap` m) `catch` \(e :: IOException) -> return $ Left e
+                 x <- liftIO $ (Right `fmap` m) `Exception.catch` \(e :: IOException) -> return $ Left e
                  case x of
                    Left e  -> throwError $ MyException $ "IO error: " ++ show e
                    Right y -> return y
