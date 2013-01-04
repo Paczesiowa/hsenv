@@ -20,5 +20,4 @@ if [ -z "${ORIG_GHC_PKG_BINARY}" ]; then
     exit 1
 fi
 
-exec "$ORIG_GHC_PKG_BINARY" --no-user-package-db \
-    --package-db=<GHC_PACKAGE_PATH> "$@"
+exec "$ORIG_GHC_PKG_BINARY" ${PACKAGE_DB_FOR_GHC_PKG} "$@"

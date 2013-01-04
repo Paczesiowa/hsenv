@@ -195,10 +195,15 @@ extraProgs = [ "alex"
 
 installSymlink :: String -> MyMonad ()
 installSymlink prog = do
-    mProgLoc <- liftIO $ findExecutable prog
+    dirStructure <- hseDirStructure
+    ghcSourceOpt <- asks ghcSource
+    mPrivateLoc <- case ghcSourceOpt of
+        System -> return Nothing
+        _      -> liftIO $ findExecutable $ ghcDir dirStructure </> "bin" </> prog
+    mSystemLoc <- liftIO $ findExecutable prog
+    let mProgLoc = mPrivateLoc `mplus` mSystemLoc
     when (isJust mProgLoc) $ do
         let Just progLoc = mProgLoc
-        dirStructure <- hseDirStructure
         liftIO $ createSymbolicLink progLoc $ hsEnvBinDir dirStructure </> prog
 
 createDirStructure :: MyMonad ()
