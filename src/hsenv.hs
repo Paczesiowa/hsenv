@@ -41,6 +41,7 @@ realMain = do
   installCabalWrapper
   installSimpleWrappers
   installProgSymlinks
+  symlinkToSkeleton "runghc" "runhaskell"
   cabalUpdate
   info ""
   dotDir <- dotDirName

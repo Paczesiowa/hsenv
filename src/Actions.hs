@@ -4,6 +4,7 @@ module Actions ( cabalUpdate
                , installActivateScript
                , installSimpleWrappers
                , installProgSymlinks
+               , symlinkToSkeleton
                , copyBaseSystem
                , initGhcDb
                , installGhc
@@ -205,6 +206,15 @@ installSymlink prog = do
     when (isJust mProgLoc) $ do
         let Just progLoc = mProgLoc
         liftIO $ createSymbolicLink progLoc $ hsEnvBinDir dirStructure </> prog
+
+-- | Install a symbolic link to a skeleton script in hsenv's bin directory
+symlinkToSkeleton :: String -- ^ Name of skeleton
+                  -> String -- ^ Name of link
+                  -> MyMonad ()
+symlinkToSkeleton skel link = do
+    dirStructure <- hseDirStructure
+    let prependBinDir = (hsEnvBinDir dirStructure </>)
+    liftIO $ createSymbolicLink (prependBinDir skel) (prependBinDir link)
 
 createDirStructure :: MyMonad ()
 createDirStructure = do
