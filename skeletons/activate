@@ -67,10 +67,18 @@ if [ "${GHC_VERSION_NUMBER}" -lt 761 ]; then
     PKG_DB_OPT_SUFFIX="db"
 fi
 
-GHC_PACKAGE_PATH_REPLACEMENT="$(cat <HSENV_DIR>/ghc_package_path_var)"
-export PACKAGE_DB_FOR_CABAL=--package-db=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ --package-db=/`
-export PACKAGE_DB_FOR_GHC_PKG=--no-user-package-"${PKG_DB_OPT_SUFFIX}"\ --package-"${PKG_DB_OPT_SUFFIX}"=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ --package-"${PKG_DB_OPT_SUFFIX}"=/`
-export PACKAGE_DB_FOR_GHC=-no-user-package-"${PKG_DB_OPT_SUFFIX}"\ -package-"${PKG_DB_OPT_SUFFIX}"=`echo "${GHC_PACKAGE_PATH_REPLACEMENT}" | sed s/:/\ -package-"${PKG_DB_OPT_SUFFIX}"=/`
+GHC_PACKAGE_PATH_REPLACEMENT="$(cat /home/rlpowell/src/synciki/.hsenv_synciki/ghc_package_path_var | sed -r -e 's/^/:/' -e 's/::*/:/g' -e 's/:\s*$//')"
+
+replace_pkg () {
+  replacement=$1
+
+  echo "$GHC_PACKAGE_PATH_REPLACEMENT" | sed -e "s/:/ $replacement/g"
+}
+
+export PACKAGE_DB_FOR_CABAL="$(replace_pkg '--package-db=')"
+export PACKAGE_DB_FOR_GHC_PKG=" --no-user-package-${PKG_DB_OPT_SUFFIX} $(replace_pkg --package-${PKG_DB_OPT_SUFFIX}=)"
+export PACKAGE_DB_FOR_GHC=" -no-user-package-${PKG_DB_OPT_SUFFIX} $(replace_pkg -package-${PKG_DB_OPT_SUFFIX}=)"
+export PACKAGE_DB_FOR_GHC_MOD=" -g -no-user-package-${PKG_DB_OPT_SUFFIX} $(replace_pkg '-g -package-'${PKG_DB_OPT_SUFFIX}=)"
 
 export PS1="(${HSENV_NAME})${PS1}"
 
