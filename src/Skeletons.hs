@@ -19,6 +19,7 @@ simpleWrappers :: [(String, String)]
 simpleWrappers = [ ghcWrapperSkel
                  , ghciWrapperSkel
                  , ghcPkgWrapperSkel
+                 , ghcModWrapperSkel
                  , runghcWrapperSkel
                  ]
 
@@ -30,6 +31,9 @@ ghciWrapperSkel = ("ghci", unpack $(embedFile $ "skeletons" </> "ghci"))
 
 ghcPkgWrapperSkel :: (String, String)
 ghcPkgWrapperSkel = ("ghc-pkg", unpack $(embedFile $ "skeletons" </> "ghc-pkg"))
+
+ghcModWrapperSkel :: (String, String)
+ghcModWrapperSkel = ("ghc-mod", unpack $(embedFile $ "skeletons" </> "ghc-mod"))
 
 runghcWrapperSkel :: (String, String)
 runghcWrapperSkel = ("runghc", unpack $(embedFile $ "skeletons" </> "runghc"))
