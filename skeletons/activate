@@ -56,18 +56,30 @@ if [ "$?" -ne 0 ]; then
     exit 1
 fi
 
-# To compare version numbers as ints, remove dots, cut all but the
-# first three chars.  This should be good enough for our needs; all
-# versions less than 7.6.1 should compare less than with this check.
+# To compare version numbers as ints, split at dots, check them all.
 GHC_VERSION_OUTPUT="$(ghc --version)"
-GHC_VERSION_NUMBER="$(echo $GHC_VERSION_OUTPUT | sed 's/.* //' | tr -d '.' | cut -c 1-3)"
+GHC_VERSION_NUMBER="$(echo $GHC_VERSION_OUTPUT | sed 's/.* //' | tr '.' ' ')"
 
-if [ "${GHC_VERSION_NUMBER}" -lt 761 ]; then
-    PKG_DB_OPT_SUFFIX="conf"; else
+item=1
+for check_num in 7 6 1
+do
+  cur_num=$(echo $GHC_VERSION_NUMBER | awk "{ print \$$item; }")
+
+  if [ "$cur_num" -lt "$check_num" ]
+  then
+    PKG_DB_OPT_SUFFIX="conf"
+    break
+  fi
+  item=$(expr $item + 1)
+done
+
+# If it's still unset, we're >= 7.6.1
+if [ -z "$PKG_DB_OPT_SUFFIX" ]
+then
     PKG_DB_OPT_SUFFIX="db"
 fi
 
-GHC_PACKAGE_PATH_REPLACEMENT="$(cat /home/rlpowell/src/synciki/.hsenv_synciki/ghc_package_path_var | sed -r -e 's/^/:/' -e 's/::*/:/g' -e 's/:\s*$//')"
+GHC_PACKAGE_PATH_REPLACEMENT="$(cat <HSENV_DIR>/ghc_package_path_var | sed -r -e 's/^/:/' -e 's/::*/:/g' -e 's/:\s*$//')"
 
 replace_pkg () {
   replacement=$1
