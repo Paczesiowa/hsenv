@@ -8,8 +8,8 @@ Description:         hsenv is a tool (inspired by Python's virtualenv) to create
                      .
                      It creates a sandboxed environment in a .hsenv_<ENVIRONMENT_NAME>/ directory, which, when activated,
                      allows you to use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haskell
-                     code and environment. It's possible to create an environment, that uses different GHC version
-                     than your currently installed. hsenv is supposed to be easier to learn (and use) than
+                     code and environment. It's possible to create an environment, that uses a different GHC version
+                     than your currently installed system GHC. hsenv is supposed to be easier to learn (and use) than
                      similar packages (like cabal-dev or capri).
                      .
                      Basic usage.
@@ -60,7 +60,7 @@ Description:         hsenv is a tool (inspired by Python's virtualenv) to create
                      .
                      For more info please consult "hsenv --help" or the attached README file.
 
-Homepage:            https://github.com/Paczesiowa/hsenv
+Homepage:            https://github.com/tmhedberg/hsenv
 
 License:             BSD3
 
@@ -68,7 +68,7 @@ License-file:        LICENSE
 
 Author:              Bartosz Ćwikłowski
 
-Maintainer:          paczesiowa@gmail.com
+Maintainer:          Taylor Hedberg <t@tmh.cc>
 
 Copyright:           (c) 2011 Bartosz Ćwikłowski
 
@@ -76,17 +76,18 @@ Category:            Development
 
 Build-type:          Simple
 
-Stability:           alpha
+Stability:           provisional
 
-Bug-reports:         https://github.com/Paczesiowa/hsenv/issues
+Bug-reports:         https://github.com/tmhedberg/hsenv/issues
 
 Package-url:         http://hackage.haskell.org/package/hsenv
 
-Tested-with:         GHC == 6.12.3, GHC == 7.0.4
+Tested-with:         GHC == 6.12.3, GHC == 7.0.4, GHC == 7.4.2, GHC == 7.6.1
 
 Data-files:          hsenv.el, README.md
 
-Extra-source-files:  skeletons/activate, skeletons/cabal, skeletons/cabal_config, skeletons/ghc, skeletons/ghc-pkg, skeletons/ghci, skeletons/runghc
+Extra-source-files:  skeletons/activate, skeletons/cabal, skeletons/cabal_config, skeletons/ghc, skeletons/ghc-mod,
+                     skeletons/ghc-pkg, skeletons/ghci, skeletons/runghc
 
 Cabal-version:       >=1.6
 
@@ -138,4 +139,4 @@ Executable hsenv
 
 Source-repository head
   Type:     git
-  Location: git://github.com/Paczesiowa/hsenv.git
+  Location: git://github.com/tmhedberg/hsenv.git
