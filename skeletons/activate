@@ -36,7 +36,6 @@ deactivate_hsenv() {
     unset -v PACKAGE_DB_FOR_GHC
     unset -v HSENV
     unset -v HSENV_NAME
-    unset -v GHC_PACKAGE_PATH
     unset -f deactivate_hsenv
 
     if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
