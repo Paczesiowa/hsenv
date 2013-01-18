@@ -4,8 +4,6 @@ module Args (getArgs) where
 
 import Control.Arrow
 import Util.Args
-import System.Directory (getCurrentDirectory)
-import System.FilePath (splitPath)
 import Types
 
 #ifdef cabal
@@ -84,7 +82,7 @@ argParser = proc () -> do
                       (False, False) -> Quiet
   name <- getOpt nameOpt -< ()
   ghcFlag <- getOpt ghcOpt -< ()
-  noPS1 <- getOpt noPS1Opt -< ()
+  noPS1' <- getOpt noPS1Opt -< ()
   let ghc = case ghcFlag of
               Nothing   -> System
               Just path -> Tarball path
@@ -97,9 +95,8 @@ argParser = proc () -> do
                    , ghcSource       = ghc
                    , makeCmd         = make
                    , noSharing       = noSharingFlag
-                   , noPS1           = noPS1
+                   , noPS1           = noPS1'
                    }
-    where liftIO' = liftIO . const
 
 getArgs :: IO Options
 getArgs = parseArgs argParser versionString outro
