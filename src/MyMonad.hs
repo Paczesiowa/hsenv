@@ -9,6 +9,7 @@ module MyMonad ( MyMonad
                , finally
                , throwError
                , catchError
+               , ask
                , asks
                , gets
                , tell
@@ -20,7 +21,7 @@ import Types
 
 import Control.Exception as Exception (IOException, catch)
 import Control.Monad.Trans (MonadIO, liftIO)
-import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks)
+import Control.Monad.Reader (ReaderT, MonadReader, runReaderT, asks, ask)
 import Control.Monad.Writer (WriterT, MonadWriter, runWriterT, tell)
 import Control.Monad.State (StateT, MonadState, evalStateT, modify, gets)
 import Control.Monad.Error (ErrorT, MonadError, runErrorT, throwError, catchError)

@@ -24,13 +24,19 @@ CABAL_CONFIG="<CABAL_CONFIG>"
 
 CABAL_BUILDDIR_ARG=""
 
+if [ -z "<HSENV_NAME>" ]; then
+    CABAL_BUILDIR="dist"
+else
+    CABAL_BUILDIR="dist_<HSENV_NAME>"
+fi
+
 CABAL_BUILDABLE_COMMANDS="build clean configure copy haddock hscolour install register sdist test upgrade"
 
 CABAL_COMMAND="$(echo ${@} | tr -s ' ' '\n' | grep -E '[a-z]' | grep -Ev '^-'  | head -n 1)"
 
 for CABAL_BUILDABLE_COMMAND in ${CABAL_BUILDABLE_COMMANDS}; do
     if [ "${CABAL_BUILDABLE_COMMAND}" = "${CABAL_COMMAND}" ]; then
-        CABAL_BUILDDIR_ARG="--builddir=dist_<HSENV_NAME>"
+        CABAL_BUILDDIR_ARG="--builddir=${CABAL_BUILDIR}"
     fi
 done
 

@@ -19,7 +19,7 @@ import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
 import Safe (lastMay)
 import Data.List (intercalate)
-import Data.Maybe
+import Data.Maybe (fromMaybe, isJust)
 
 import MyMonad
 import Types
@@ -72,7 +72,7 @@ installCabalWrapper = do
                 , cabalWrapper
                 ]
   let cabalWrapperContents = substs [ ("<CABAL_CONFIG>", cabalConfig)
-                                    , ("<HSENV_NAME>", hsEnvName')] cabalWrapperSkel
+                                    , ("<HSENV_NAME>", fromMaybe "" hsEnvName')] cabalWrapperSkel
   indentMessages $ do
     trace "cabal wrapper contents:"
     indentMessages $ mapM_ trace $ lines cabalWrapperContents
@@ -113,7 +113,7 @@ installActivateScript = do
   ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
   let activateScript = hsEnvBinDir dirStructure </> "activate"
   indentMessages $ debug $ "using location: " ++ activateScript
-  let activateScriptContents = substs [ ("<HSENV_NAME>", hsEnvName')
+  let activateScriptContents = substs [ ("<HSENV_NAME>", fromMaybe "" hsEnvName')
                                       , ("<HSENV_DIR>", hsEnvDir dirStructure)
                                       , ("<HSENV>", hsEnv dirStructure)
                                       , ("<GHC_PACKAGE_PATH>", ghcPkgDbPath)
