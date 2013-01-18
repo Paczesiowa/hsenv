@@ -19,7 +19,7 @@ versionString :: String
 versionString = "dev"
 #endif
 
-verbosityOpt, veryVerbosityOpt, skipSanityOpt, sharingOpt :: Switch
+verbosityOpt, veryVerbosityOpt, skipSanityOpt, sharingOpt, noPS1Opt :: Switch
 
 verbosityOpt = Switch { switchName  = "verbose"
                       , switchHelp  = "Print some debugging info"
@@ -40,6 +40,13 @@ sharingOpt = Switch { switchName  = "dont-share-cabal-cache"
                     , switchHelp  = "Don't share ~/.cabal/packages (hackage download cache)"
                     , switchShort = Nothing
                     }
+
+noPS1Opt =
+    Switch { switchName = "no-ps1-indicator"
+           , switchHelp =
+               "Don't modify the shell prompt to indicate the current hsenv"
+           , switchShort = Nothing
+           }
 
 nameOpt, ghcOpt :: DynOpt
 
@@ -77,6 +84,7 @@ argParser = proc () -> do
                       (False, False) -> Quiet
   name <- getOpt nameOpt -< ()
   ghcFlag <- getOpt ghcOpt -< ()
+  noPS1 <- getOpt noPS1Opt -< ()
   let ghc = case ghcFlag of
               Nothing   -> System
               Just path -> Tarball path
@@ -89,6 +97,7 @@ argParser = proc () -> do
                    , ghcSource       = ghc
                    , makeCmd         = make
                    , noSharing       = noSharingFlag
+                   , noPS1           = noPS1
                    }
     where liftIO' = liftIO . const
 

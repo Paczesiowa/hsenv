@@ -109,18 +109,21 @@ installActivateScript :: MyMonad ()
 installActivateScript = do
   info "Installing activate script"
   hsEnvName'   <- asks hsEnvName
+  noModifyPS1  <- asks noPS1
   dirStructure <- hseDirStructure
   ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
   let activateScript = hsEnvBinDir dirStructure </> "activate"
   indentMessages $ debug $ "using location: " ++ activateScript
-  let activateScriptContents = substs [ ("<HSENV_NAME>", fromMaybe "" hsEnvName')
-                                      , ("<HSENV_DIR>", hsEnvDir dirStructure)
-                                      , ("<HSENV>", hsEnv dirStructure)
-                                      , ("<GHC_PACKAGE_PATH>", ghcPkgDbPath)
-                                      , ("<HSENV_BIN_DIR>", hsEnvBinDir dirStructure)
-                                      , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
-                                      , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
-                                      ] activateSkel
+  let activateScriptContents =
+          substs [ ("<HSENV_NAME>", fromMaybe "" hsEnvName')
+                 , ("<HSENV_DIR>", hsEnvDir dirStructure)
+                 , ("<HSENV>", hsEnv dirStructure)
+                 , ("<GHC_PACKAGE_PATH>", ghcPkgDbPath)
+                 , ("<HSENV_BIN_DIR>", hsEnvBinDir dirStructure)
+                 , ("<CABAL_BIN_DIR>", cabalBinDir dirStructure)
+                 , ("<GHC_BIN_DIR>", ghcBinDir dirStructure)
+                 , ("<MODIFY_PS1>", if noModifyPS1 then "false" else "true")
+                 ] activateSkel
   indentMessages $ do
     trace "activate script contents:"
     indentMessages $ mapM_ trace $ lines activateScriptContents

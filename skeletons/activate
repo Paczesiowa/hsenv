@@ -20,7 +20,10 @@ echo ""
 echo "To exit from this virtual environment, enter command 'deactivate_hsenv'."
 
 export "HSENV_PATH_BACKUP"="${PATH}"
-export "HSENV_PS1_BACKUP"="${PS1}"
+
+if <MODIFY_PS1>; then
+    export "HSENV_PS1_BACKUP"="${PS1}"
+fi
 
 deactivate_hsenv() {
     echo "Deactivating ${HSENV_NAME} Virtual Haskell Environment (at ${HSENV})."
@@ -28,8 +31,11 @@ deactivate_hsenv() {
 
     export "PATH"="${HSENV_PATH_BACKUP}"
     unset -v "HSENV_PATH_BACKUP"
-    export "PS1"="${HSENV_PS1_BACKUP}"
-    unset -v "HSENV_PS1_BACKUP"
+
+    if <MODIFY_PS1>; then
+        export "PS1"="${HSENV_PS1_BACKUP}"
+        unset -v "HSENV_PS1_BACKUP"
+    fi
 
     unset -v PACKAGE_DB_FOR_CABAL
     unset -v PACKAGE_DB_FOR_GHC_PKG
@@ -91,7 +97,9 @@ export PACKAGE_DB_FOR_GHC_PKG=" --no-user-package-${PKG_DB_OPT_SUFFIX} $(replace
 export PACKAGE_DB_FOR_GHC=" -no-user-package-${PKG_DB_OPT_SUFFIX} $(replace_pkg -package-${PKG_DB_OPT_SUFFIX}=)"
 export PACKAGE_DB_FOR_GHC_MOD=" -g -no-user-package-${PKG_DB_OPT_SUFFIX} $(replace_pkg '-g -package-'${PKG_DB_OPT_SUFFIX}=)"
 
-export PS1="(${HSENV_NAME})${PS1}"
+if <MODIFY_PS1>; then
+    export PS1="(${HSENV_NAME})${PS1}"
+fi
 
 unset -v GHC_VERSION_OUTPUT
 unset -v GHC_VERSION_NUMBER
