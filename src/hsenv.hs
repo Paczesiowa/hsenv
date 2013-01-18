@@ -7,7 +7,7 @@ import MyMonad
 import Actions
 import SanityCheck (sanityCheck)
 import Args (getArgs)
-import Paths (dotDirName)
+import Paths (dotDirName, constructDotDirName)
 
 main :: IO ()
 main = do
@@ -22,7 +22,7 @@ main = do
                 writeFile "hsenv.log" errorLog
                 exitFailure
     Right ()  -> do
-                let dotDir = ".hsenv_" ++ hsEnvName options
+                let dotDir = constructDotDirName options
                 writeFile (dotDir </> "hsenv.log") $ unlines messageLog
 
 realMain :: MyMonad ()

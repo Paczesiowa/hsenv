@@ -75,12 +75,7 @@ argParser = proc () -> do
                       (_, True)      -> VeryVerbose
                       (True, False)  -> Verbose
                       (False, False) -> Quiet
-  nameFlag <- getOpt nameOpt -< ()
-  name <- case nameFlag of
-           Just name' -> returnA -< name'
-           Nothing -> do
-             cwd <- liftIO' getCurrentDirectory -< ()
-             returnA -< last $ splitPath cwd
+  name <- getOpt nameOpt -< ()
   ghcFlag <- getOpt ghcOpt -< ()
   let ghc = case ghcFlag of
               Nothing   -> System

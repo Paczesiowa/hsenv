@@ -1,6 +1,7 @@
 module Paths ( hseDirStructure
              , cabalConfigLocation
              , dotDirName
+             , constructDotDirName
              , insidePathVar
              ) where
 
@@ -32,11 +33,14 @@ hseDirStructure = do
                       , ghcBinDir      = ghcDirLocation </> "bin"
                       }
 
+constructDotDirName :: Options -> String
+constructDotDirName opts = maybe ".hsenv" (".hsenv_" ++) (hsEnvName opts)
+
 -- directory name of hsEnvDir
 dotDirName :: MyMonad String
 dotDirName = do
-  name <- asks hsEnvName
-  return $ ".hsenv_" ++ name
+  opts <- ask
+  return $ constructDotDirName opts
 
 -- returns location of cabal's config file inside virtual environment dir structure
 cabalConfigLocation :: MyMonad FilePath
