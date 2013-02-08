@@ -98,7 +98,11 @@ export PACKAGE_DB_FOR_GHC=" -no-user-package-${PKG_DB_OPT_SUFFIX} $(replace_pkg 
 export PACKAGE_DB_FOR_GHC_MOD=" -g -no-user-package-${PKG_DB_OPT_SUFFIX} $(replace_pkg '-g -package-'${PKG_DB_OPT_SUFFIX}=)"
 
 if <MODIFY_PS1>; then
-    export PS1="(${HSENV_NAME})${PS1}"
+    if [ -n "$HSENV_NAME" ]; then
+        PS1="($HSENV_NAME)$PS1"
+    else
+        PS1="[hsenv]$PS1"
+    fi
 fi
 
 unset -v GHC_VERSION_OUTPUT
