@@ -19,22 +19,22 @@ echo "Use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haske
 echo ""
 echo "To exit from this virtual environment, enter command 'deactivate_hsenv'."
 
-export "HSENV_PATH_BACKUP"="${PATH}"
+HSENV_PATH_BACKUP="$PATH"
 
 if <MODIFY_PS1>; then
-    export "HSENV_PS1_BACKUP"="${PS1}"
+    HSENV_PS1_BACKUP="$PS1"
 fi
 
 deactivate_hsenv() {
     echo "Deactivating ${HSENV_NAME} Virtual Haskell Environment (at ${HSENV})."
     echo "Restoring previous environment settings."
 
-    export "PATH"="${HSENV_PATH_BACKUP}"
-    unset -v "HSENV_PATH_BACKUP"
+    export PATH="$HSENV_PATH_BACKUP"
+    unset -v HSENV_PATH_BACKUP
 
     if <MODIFY_PS1>; then
-        export "PS1"="${HSENV_PS1_BACKUP}"
-        unset -v "HSENV_PS1_BACKUP"
+        PS1="$HSENV_PS1_BACKUP"
+        unset -v HSENV_PS1_BACKUP
     fi
 
     unset -v PACKAGE_DB_FOR_CABAL
