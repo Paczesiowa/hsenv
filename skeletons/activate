@@ -84,6 +84,8 @@ then
     PKG_DB_OPT_SUFFIX="db"
 fi
 
+export HASKELL_PACKAGE_SANDBOX="`<<HSENV_DIR>/ghc_package_path_var`"
+
 GHC_PACKAGE_PATH_REPLACEMENT="$(cat <HSENV_DIR>/ghc_package_path_var | sed -e 's/^/:/' -e 's/::*/:/g' -e 's/:\s*$//')"
 
 replace_pkg () {
