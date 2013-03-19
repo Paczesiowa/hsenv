@@ -288,7 +288,7 @@ installGhc = do
   case ghc of
     System              -> indentMessages $ debug "Using system version of GHC - nothing to install."
     Tarball tarballPath -> indentMessages $ installExternalGhc tarballPath
-    URL url             -> indentMessages $ installRemoteGhc url
+    Url url             -> indentMessages $ installRemoteGhc url
     Release tag         -> indentMessages $ installReleasedGhc tag
 
 installExternalGhc :: FilePath -> MyMonad ()
@@ -326,7 +326,7 @@ installRemoteGhc url = do
 
 installReleasedGhc :: String -> MyMonad ()
 installReleasedGhc tag = do
-    let url = "http://www.haskell.org/ghc/dist/" ++ tag ++ "/ghc-" ++ tag ++ "-" ++ platform ++ "tar.bz2"
+    let url = "http://www.haskell.org/ghc/dist/" ++ tag ++ "/ghc-" ++ tag ++ "-" ++ platform ++ ".tar.bz2"
     installRemoteGhc url
 
 platform :: String
