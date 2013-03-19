@@ -44,8 +44,7 @@ checkGhc :: MyMonad ()
 checkGhc = do
   ghcSrc <- asks ghcSource
   case ghcSrc of
-    Tarball _ -> return ()
-    System    -> do
+    System -> do
       ghcPath <- liftIO $ which Nothing "ghc"
       case ghcPath of
         Just _  -> return ()
@@ -54,6 +53,7 @@ checkGhc = do
       case ghc_pkgPath of
         Just _  -> return ()
         Nothing -> throwError $ MyException "Couldn't find ghc-pkg binary in your $PATH."
+    _      -> return ()
 
 -- check if everything is sane
 sanityCheck :: MyMonad ()
