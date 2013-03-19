@@ -3,6 +3,7 @@
 module Args (getArgs) where
 
 import Control.Arrow
+import Data.Char
 import Util.Args
 import Types
 
@@ -57,10 +58,10 @@ nameOpt = DynOpt
 
 ghcOpt = DynOpt
          { dynOptName = "ghc"
-         , dynOptTemplate = "FILE"
+         , dynOptTemplate = "VERSION|URL|FILE"
          , dynOptDescription = "system's copy of GHC"
          , dynOptHelp =
-             "Use GHC from provided tarball (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
+             "Use GHC from provided location -- a GHC version number, an HTTP or HTTPS URL or a path to a tarball (e.g. ghc-7.0.4-i386-unknown-linux.tar.bz2)"
          }
 
 makeOpt :: StaticOpt
@@ -85,7 +86,12 @@ argParser = proc () -> do
   noPS1' <- getOpt noPS1Opt -< ()
   let ghc = case ghcFlag of
               Nothing   -> System
-              Just path -> Tarball path
+              -- First check for URLs (@//@ is not meaningful in Posix file
+              -- paths), then versions and then default to path.
+              Just s | "https://" == take 8 s -> Url s
+                     | "http://"  == take 7 s -> Url s
+                     | isVersion s            -> Release s
+                     | otherwise              -> Tarball s
   skipSanityCheckFlag <- getOpt skipSanityOpt -< ()
   noSharingFlag <- getOpt sharingOpt -< ()
   make <- getOpt makeOpt -< ()
@@ -102,3 +108,9 @@ getArgs :: IO Options
 getArgs = parseArgs argParser versionString outro
     where outro = "Creates Virtual Haskell Environment in the current directory.\n"
                   ++ "All files will be stored in the .hsenv_ENVNAME/ subdirectory."
+
+isVersion :: String -> Bool
+isVersion s = case dropWhile isDigit s of
+                ""     -> s /= ""
+                '.':s' -> s /= s' && isVersion s'
+                _      -> False
