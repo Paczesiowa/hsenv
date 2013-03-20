@@ -112,5 +112,5 @@ getArgs = parseArgs argParser versionString outro
 isVersion :: String -> Bool
 isVersion s = case dropWhile isDigit s of
                 ""     -> s /= ""
-                '.':s' -> s /= s' && isVersion s'
+                '.':s' -> s /= '.':s' && isVersion s'
                 _      -> False
