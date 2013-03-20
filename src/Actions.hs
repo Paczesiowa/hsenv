@@ -14,6 +14,7 @@ module Actions ( cabalUpdate
 import Control.Monad
 import System.Directory (setCurrentDirectory, getCurrentDirectory, createDirectory, removeDirectoryRecursive, getAppUserDataDirectory, doesFileExist, findExecutable)
 import System.FilePath ((</>))
+import System.Info (arch, os)
 import System.Posix hiding (createDirectory, version)
 import Distribution.Version (Version (..))
 import Distribution.Package (PackageName(..))
@@ -88,11 +89,11 @@ installActivateScriptSupportFiles = do
     let pathVarPrependixLocation = hsEnvDir dirStructure </> "path_var_prependix"
         pathVarElems =
             case ghc of
-              System    -> [hsEnvBinDir dirStructure, cabalBinDir dirStructure]
-              Tarball _ -> [ hsEnvBinDir dirStructure
-                          , cabalBinDir dirStructure
-                          , ghcBinDir dirStructure
-                          ]
+              System -> [hsEnvBinDir dirStructure, cabalBinDir dirStructure]
+              _      -> [ hsEnvBinDir dirStructure
+                        , cabalBinDir dirStructure
+                        , ghcBinDir dirStructure
+                        ]
         pathVarPrependix = intercalate ":" pathVarElems
     debug $ "installing path_var_prependix file to " ++ pathVarPrependixLocation
     indentMessages $ trace $ "path_var_prependix contents: " ++ pathVarPrependix
@@ -278,8 +279,7 @@ copyBaseSystem = do
         transplantPackage $ PackageName "base"
         transplantPackage $ PackageName "Cabal"
         mapM_ transplantOptionalPackage ["haskell98", "haskell2010", "ghc", "ghc-binary"]
-      Tarball _ ->
-        debug "Using external GHC - nothing to copy, Virtual environment will reuse GHC package database"
+      _ -> debug "Using external GHC - nothing to copy, Virtual environment will reuse GHC package database"
 
 installGhc :: MyMonad ()
 installGhc = do
@@ -288,6 +288,8 @@ installGhc = do
   case ghc of
     System              -> indentMessages $ debug "Using system version of GHC - nothing to install."
     Tarball tarballPath -> indentMessages $ installExternalGhc tarballPath
+    Url url             -> indentMessages $ installRemoteGhc url
+    Release tag         -> indentMessages $ installReleasedGhc tag
 
 installExternalGhc :: FilePath -> MyMonad ()
 installExternalGhc tarballPath = do
@@ -310,3 +312,22 @@ installExternalGhc tarballPath = do
     configureAndInstall `finally` liftIO (setCurrentDirectory cwd)
     liftIO $ removeDirectoryRecursive tmpGhcDir
     return ()
+
+installRemoteGhc :: String -> MyMonad ()
+installRemoteGhc url = do
+    dirStructure <- hseDirStructure
+    downloadDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc-download"
+    let tarball = downloadDir </> "tarball"
+    debug $ "Downloading GHC from " ++ url
+    _ <- indentMessages $ outsideProcess' "curl" ["-fL", "--retry", "2", url, "-o", tarball]
+    installExternalGhc tarball
+    liftIO $ removeDirectoryRecursive downloadDir
+    return ()
+
+installReleasedGhc :: String -> MyMonad ()
+installReleasedGhc tag = do
+    let url = "http://www.haskell.org/ghc/dist/" ++ tag ++ "/ghc-" ++ tag ++ "-" ++ platform ++ ".tar.bz2"
+    installRemoteGhc url
+
+platform :: String
+platform = intercalate "-" [arch, if os == "darwin" then "apple" else "unknown", os]

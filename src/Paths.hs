@@ -58,6 +58,6 @@ insidePathVar = do
   dirStructure <- hseDirStructure
   ghc          <- asks ghcSource
   let extraPathElems = case ghc of
-                         System    -> [cabalBinDir dirStructure]
-                         Tarball _ -> [cabalBinDir dirStructure, ghcBinDir dirStructure]
+                         System -> [cabalBinDir dirStructure]
+                         _      -> [cabalBinDir dirStructure, ghcBinDir dirStructure]
   return $ intercalate ":" extraPathElems ++ oldPathVarSuffix

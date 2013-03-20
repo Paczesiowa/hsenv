@@ -100,8 +100,8 @@ ghcPkgDbPathLocation = do
   dirStructure <- hseDirStructure
   ghc <- asks ghcSource
   case ghc of
-    System    -> return $ ghcPackagePath dirStructure
-    Tarball _ -> do
+    System -> return $ ghcPackagePath dirStructure
+    _      -> do
              externalGhcPkgDbPath <- indentMessages externalGhcPkgDb
              return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath
 

@@ -11,6 +11,8 @@ import Control.Monad.Error (Error)
 
 data GhcSource = System           -- Use System's copy of GHC
                | Tarball FilePath -- Use GHC from tarball
+               | Url String       -- Use GHC downloadable at URL
+               | Release String   -- Infer a URL and use GHC from there
 
 data Verbosity = Quiet
                | Verbose
