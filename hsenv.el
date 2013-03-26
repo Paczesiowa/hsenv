@@ -4,16 +4,20 @@
 
 (defun hsenv-valid-dirp (hsenv-dir)
   (let ((valid (and (file-accessible-directory-p hsenv-dir)
-                    (file-readable-p (concat hsenv-dir hsenv-path-prepend-file))
-                    (file-readable-p (concat hsenv-dir hsenv-ghc-package-path-file)))))
+                    (file-readable-p
+                     (concat hsenv-dir hsenv-path-prepend-file))
+                    (file-readable-p
+                     (concat hsenv-dir hsenv-ghc-package-path-file)))))
     (when (not valid)
-      (message "The environment you provided is not a valid hsenv directory (%s)." hsenv-dir))
+      (message "The environment you provided is not a valid hsenv directory (%s)."
+               hsenv-dir))
     valid))
 
 (defun hsenv-is-not-active ()
   (let ((is-not-active (not hsenv-active-environment)))
     (when (not is-not-active)
-      (message "An hsenv is already activated (%s)." (assoc-default 'dir hsenv-active-environment)))
+      (message "An hsenv is already activated (%s)."
+               (assoc-default 'dir hsenv-active-environment)))
     is-not-active))
 
 (defun hsenv-is-active ()
@@ -36,11 +40,14 @@
                                          `(exec-path-backup . ,exec-path)
                                          `(dir . ,hsenv-dir)))
     ; Prepend paths
-    (let* ((path-prepend (hsenv-read-file-content hsenv-dir hsenv-path-prepend-file)))
+    (let* ((path-prepend (hsenv-read-file-content hsenv-dir
+                                                  hsenv-path-prepend-file)))
       (setenv "PATH" (concat  path-prepend ":" (getenv "PATH")))
       (setq exec-path (append (split-string path-prepend ":") exec-path)))
     ; Set ghc-package
-    (setenv "GHC_PACKAGE_PATH" (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file))))
+    (setenv "GHC_PACKAGE_PATH"
+            (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file))
+    (message "Environment activated: %s" hsenv-dir)))
 
 (defun hsenv-deactivate ()
   "Deactivate the Virtual Haskell Environment"
