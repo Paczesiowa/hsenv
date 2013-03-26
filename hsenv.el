@@ -57,23 +57,35 @@
     (setenv "PATH" (assoc-default 'path-backup hsenv-active-environment))
     (setq exec-path (assoc-default 'exec-path-backup hsenv-active-environment))
     ; Destroy the hsenv active environment
-    (setq hsenv-active-environment nil)))
+    (let ((old-dir (cdr (assoc 'dir hsenv-active-environment))))
+      (setq hsenv-active-environment nil)
+      (message "Environment deactivated: %s" old-dir))))
 
 (defun hsenv-activate-dir (dir)
   (let ((environments (hsenv-list-environments dir)))
     (if (null environments)
         (message "Directory %s does not contain any hsenv." dir)
+      (message "environments: %s" environments)
       (let* ((env-name (if (= 1 (length environments))
-                           (car environments)
-                         (completing-read "Environment:" environments)))
-             (hsenv-dir-name (concat dir ".hsenv_" env-name))
-             (hsenv-dir (file-name-as-directory hsenv-dir-name)))
-        (hsenv-activate-environment hsenv-dir)))))
+                           (car (car environments))
+                         (completing-read "Environment:"
+                                          (mapcar #'car environments))))
+             (env (assoc env-name environments)))
+        (message "name= %s env = %s" env-name env)
+        (let* ((hsenv-dir-name (cdr env))
+               (hsenv-dir (file-name-as-directory hsenv-dir-name)))
+          (hsenv-activate-environment hsenv-dir))))))
 
 (defun hsenv-list-environments (dir)
-  (let ((hsenv-dirs (file-expand-wildcards (concat dir ".hsenv_*"))))
-    (mapcar (lambda (hsenv-dir) (substring hsenv-dir (+ 7 (length dir)))) hsenv-dirs)))
-
+  (let ((hsenv-dirs (append (file-expand-wildcards (concat dir ".hsenv"))
+			    (file-expand-wildcards (concat dir ".hsenv_*")))))
+    (mapcar (lambda (hsenv-dir)
+              (let* ((env-name
+                      (if (> (length hsenv-dir) (+ 7 (length dir)))
+                          (substring hsenv-dir (+ 7 (length dir)))
+                        "(default)")))
+                (cons env-name hsenv-dir)))
+            hsenv-dirs)))
 
 (defun hsenv-activate (&optional select-dir)
   "Activate a Virtual Haskell Environment"
