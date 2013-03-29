@@ -1,4 +1,5 @@
 (defvar hsenv-active-environment nil)
+
 (defconst hsenv-path-prepend-file "path_var_prependix")
 (defconst hsenv-ghc-package-path-file "ghc_package_path_var")
 
@@ -49,6 +50,32 @@
             (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file))
     (message "Environment activated: %s" hsenv-dir)))
 
+(defun hsenv-env-name-from-dir (directory)
+  "Return the name of an environment based on DIRECTORY."
+  (let ((offs (string-match "[.]hsenv_\\([^\\/]*\\)$" directory)))
+    (cond
+     (offs
+      (substring directory (+ 7 offs)))
+     ((string-match "[.]hsenv$" directory)
+      "(default)")
+     (t
+      (error "Not an hsenv directory %s" directory)))))
+
+;;; Tests:
+;; (and (equal "foo" (hsenv-env-name-from-dir "/home/bar/baz/.hsenv_foo"))
+;;      (equal "foo" (hsenv-env-name-from-dir "/home/bar/.hsenv_boo/baz/.hsenv_foo"))
+;;      (equal "(default)"
+;;             (hsenv-env-name-from-dir "/home/bar/.hsenv_boo/baz/.hsenv")))
+
+(defun hsenv-make-env (directory)
+  (cons (hsenv-env-name-from-dir directory) directory))
+
+(defun hsenv-env-name (env)
+  (car env))
+
+(defun hsenv-env-dir (env)
+  (cdr env))
+
 (defun hsenv-deactivate ()
   "Deactivate the Virtual Haskell Environment"
   (interactive)
@@ -65,27 +92,23 @@
   (let ((environments (hsenv-list-environments dir)))
     (if (null environments)
         (message "Directory %s does not contain any hsenv." dir)
-      (message "environments: %s" environments)
-      (let* ((env-name (if (= 1 (length environments))
-                           (car (car environments))
-                         (completing-read "Environment:"
-                                          (mapcar #'car environments))))
+      (let* ((env-name
+              (if (= 1 (length environments))
+                  (hsenv-env-name (car environments))
+                (completing-read "Environment:"
+                                 (mapcar #'hsenv-env-name environments))))
              (env (assoc env-name environments)))
-        (message "name= %s env = %s" env-name env)
-        (let* ((hsenv-dir-name (cdr env))
+        (let* ((hsenv-dir-name (hsenv-env-dir env))
                (hsenv-dir (file-name-as-directory hsenv-dir-name)))
           (hsenv-activate-environment hsenv-dir))))))
 
 (defun hsenv-list-environments (dir)
+  "Returns an assoc list of all environments avaliable in DIR.
+
+The assoc list contains pairs of the form (NAME . DIRECTORY)."
   (let ((hsenv-dirs (append (file-expand-wildcards (concat dir ".hsenv"))
 			    (file-expand-wildcards (concat dir ".hsenv_*")))))
-    (mapcar (lambda (hsenv-dir)
-              (let* ((env-name
-                      (if (> (length hsenv-dir) (+ 7 (length dir)))
-                          (substring hsenv-dir (+ 7 (length dir)))
-                        "(default)")))
-                (cons env-name hsenv-dir)))
-            hsenv-dirs)))
+    (mapcar #'hsenv-make-env hsenv-dirs)))
 
 (defun hsenv-activate (&optional select-dir)
   "Activate a Virtual Haskell Environment"
