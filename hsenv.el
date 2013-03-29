@@ -1,7 +1,4 @@
-(defvar hsenv-active-environment nil
-  "A assoc list of (NAME . DIRECTORY) pairs.
-
-See `hsenv-make-env' for details.")
+(defvar hsenv-active-environment nil)
 
 (defconst hsenv-path-prepend-file "path_var_prependix")
 (defconst hsenv-ghc-package-path-file "ghc_package_path_var")
@@ -106,6 +103,9 @@ See `hsenv-make-env' for details.")
           (hsenv-activate-environment hsenv-dir))))))
 
 (defun hsenv-list-environments (dir)
+  "Returns an assoc list of all environments avaliable in DIR.
+
+The assoc list contains pairs of the form (NAME . DIRECTORY)."
   (let ((hsenv-dirs (append (file-expand-wildcards (concat dir ".hsenv"))
 			    (file-expand-wildcards (concat dir ".hsenv_*")))))
     (mapcar #'hsenv-make-env hsenv-dirs)))
