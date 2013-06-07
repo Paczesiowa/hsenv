@@ -152,7 +152,7 @@
   "Returns an assoc list of all environments avaliable in DIR.
 
 The assoc list contains pairs of the form (NAME . DIRECTORY)."
-  (let ((hsenv-dirs (directory-files dir nil "^\\.hsenv\\(_.*\\)?$")))
+  (let ((hsenv-dirs (directory-files dir t "^\\.hsenv\\(_.*\\)?$")))
     (mapcar #'hsenv-make-env hsenv-dirs)))
 
 (defun hsenv-activate (&optional select-dir)
