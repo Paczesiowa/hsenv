@@ -32,7 +32,7 @@
     (insert-file-contents (concat hsenv-dir file))
     (buffer-string)))
 
-(defun hsenv-activate-environment (hsenv-dir)
+(defun hsenv-activate-environment (hsenv-dir env env-name)
   "Activate the Virtual Haskell Environment in directory HSENV-DIR"
   (when (and (hsenv-valid-dirp hsenv-dir)
              (hsenv-is-not-active))
@@ -45,17 +45,28 @@
                                                   hsenv-path-prepend-file)))
       (setenv "PATH" (concat  path-prepend ":" (getenv "PATH")))
       (setq exec-path (append (split-string path-prepend ":") exec-path)))
-    ; Set ghc-package
-    (setenv "GHC_PACKAGE_PATH"
-            (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file))
+    (let ((package-db (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file)))
+      (setenv "PACKAGE_DB_FOR_GHC" 
+              (concat "-no-user-package-db -package-db=" package-db))
+      (setenv "PACKAGE_DB_FOR_CABAL" 
+              (concat "--package-db=" package-db))
+      (setenv "PACKAGE_DB_FOR_GHC_PKG" 
+              (concat "--no-user-package-db --package-db=" package-db))
+      (setenv "PACKAGE_DB_FOR_GHC_MOD" 
+              (concat "-g -no-user-package-db -g -package-db=" package-db))
+      (setenv "HASKELL_PACKAGE_SANDBOX" package-db))
+    
+    (setenv "HSENV" env)
+    (setenv "HSENV_NAME" env-name)
+      
     (message "Environment activated: %s" hsenv-dir)))
 
 (defun hsenv-env-name-from-dir (directory)
   "Return the name of an environment based on DIRECTORY."
-  (let ((offs (string-match "[.]hsenv_\\([^\\/]*\\)$" directory)))
+  (let ((offs (string-match "[.]hsenv\\([^\\/]*\\)$" directory)))
     (cond
      (offs
-      (substring directory (+ 7 offs)))
+      (substring directory (+ 6 offs)))
      ((string-match "[.]hsenv$" directory)
       "(default)")
      (t
@@ -83,6 +94,13 @@
     ; Restore paths
     (setenv "PATH" (assoc-default 'path-backup hsenv-active-environment))
     (setq exec-path (assoc-default 'exec-path-backup hsenv-active-environment))
+    (setenv "PACKAGE_DB_FOR_GHC")
+    (setenv "PACKAGE_DB_FOR_GHC_PKG")
+    (setenv "PACKAGE_DB_FOR_GHC_MOD")
+    (setenv "PACKAGE_DB_FOR_CABAL")
+    (setenv "HSENV")
+    (setenv "HSENV_NAME")
+    (setenv "HASKELL_PACKAGE_SANDBOX")
     ; Destroy the hsenv active environment
     (let ((old-dir (cdr (assoc 'dir hsenv-active-environment))))
       (setq hsenv-active-environment nil)
@@ -100,14 +118,14 @@
              (env (assoc env-name environments)))
         (let* ((hsenv-dir-name (hsenv-env-dir env))
                (hsenv-dir (file-name-as-directory hsenv-dir-name)))
-          (hsenv-activate-environment hsenv-dir))))))
+          (hsenv-activate-environment hsenv-dir dir env-name))))))
 
 (defun hsenv-list-environments (dir)
   "Returns an assoc list of all environments avaliable in DIR.
 
 The assoc list contains pairs of the form (NAME . DIRECTORY)."
   (let ((hsenv-dirs (append (file-expand-wildcards (concat dir ".hsenv"))
-			    (file-expand-wildcards (concat dir ".hsenv_*")))))
+			    (file-expand-wildcards (concat dir ".hsenv*")))))
     (mapcar #'hsenv-make-env hsenv-dirs)))
 
 (defun hsenv-activate (&optional select-dir)
