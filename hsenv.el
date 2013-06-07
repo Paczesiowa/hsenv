@@ -55,7 +55,13 @@
 (defun hsenv-read-file-content (hsenv-dir file)
   (with-temp-buffer
     (insert-file-contents (concat hsenv-dir file))
-    (buffer-string)))
+    (replace-regexp-in-string "\n+$" "" (buffer-string))))
+
+(defun hsenv-replace-pkg (template package-dbs)
+  (apply #'concat 
+         (mapcar #'(lambda (db)
+                     (concat template db))
+                 package-dbs)))
 
 (defun hsenv-activate-environment (hsenv-dir env env-name)
   "Activate the Virtual Haskell Environment in directory HSENV-DIR"
@@ -69,17 +75,21 @@
            (path-prepend (hsenv-read-file-content hsenv-dir
                                                   hsenv-path-prepend-file))
            (package-db (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file))
+           (package-dbs (split-string package-db ":"))
            (suffix (hsenv-select-opt-suffix)))
       (setenv "PATH" (concat  path-prepend ":" (getenv "PATH")))
       (setq exec-path (append (split-string path-prepend ":") exec-path))
       (setenv "PACKAGE_DB_FOR_GHC"
-              (concat "-no-user-package-" suffix " -package-" suffix "=" package-db))
+              (concat "-no-user-package-" suffix 
+                      (hsenv-replace-pkg (concat " -package-" suffix "=") package-dbs)))
       (setenv "PACKAGE_DB_FOR_CABAL"
-              (concat "--package-db=" package-db))
+              (hsenv-replace-pkg " --package-db=" package-dbs))
       (setenv "PACKAGE_DB_FOR_GHC_PKG"
-              (concat "--no-user-package-" suffix " --package-" suffix "=" package-db))
+              (concat "--no-user-package-" suffix 
+                      (hsenv-replace-pkg (concat " --package-" suffix "=") package-dbs)))
       (setenv "PACKAGE_DB_FOR_GHC_MOD"
-              (concat "-g -no-user-package-" suffix " -g -package-" suffix "=" package-db))
+              (concat "-g -no-user-package-" suffix 
+                      (hsenv-replace-pkg (concat " -g -package-" suffix "=") package-dbs)))
       (setenv "HASKELL_PACKAGE_SANDBOX" package-db)
       (setenv "HSENV" env)
       (setenv "HSENV_NAME" env-name)
