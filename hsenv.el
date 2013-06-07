@@ -3,6 +3,31 @@
 (defconst hsenv-path-prepend-file "path_var_prependix")
 (defconst hsenv-ghc-package-path-file "ghc_package_path_var")
 
+(defun hsenv-compare-ghc-version (version-string &optional threshold)
+  (save-match-data
+    (when (string-match "\\(\\([0-9]+\\.?\\)+\\)$" version-string)
+      (let* ((threshold (or threshold (list 7 6 1)))
+             (version (match-string 1 version-string))
+             (version-numbers 
+              (mapcar #'string-to-number (split-string version "\\."))))
+        (block nil
+            (mapcar* #'(lambda (v1 v2)
+                         (when (< v1 v2)
+                           (return 'lt))
+                         (when (> v1 v2)
+                           (return 'gt)))
+                     version-numbers
+                     threshold)
+            'eq)))))
+
+(defun hsenv-select-opt-suffix ()
+  (let ((cmp-result (hsenv-compare-ghc-version (shell-command-to-string "ghc --version"))))
+    (unless cmp-result
+      (error "Cannot get GHC version"))
+    (if (eq 'lt cmp-result)
+        "conf"
+      "db")))
+
 (defun hsenv-valid-dirp (hsenv-dir)
   (let ((valid (and (file-accessible-directory-p hsenv-dir)
                     (file-readable-p
@@ -36,41 +61,43 @@
   "Activate the Virtual Haskell Environment in directory HSENV-DIR"
   (when (and (hsenv-valid-dirp hsenv-dir)
              (hsenv-is-not-active))
-    ; Create an hsenv active environment and backup paths
-    (setq hsenv-active-environment (list `(path-backup . ,(getenv "PATH"))
-                                         `(exec-path-backup . ,exec-path)
-                                         `(dir . ,hsenv-dir)))
+
     ; Prepend paths
-    (let* ((path-prepend (hsenv-read-file-content hsenv-dir
-                                                  hsenv-path-prepend-file)))
+    (let* ((new-hsenv-active-environment (list `(path-backup . ,(getenv "PATH"))
+                                               `(exec-path-backup . ,exec-path)
+                                               `(dir . ,hsenv-dir)))
+           (path-prepend (hsenv-read-file-content hsenv-dir
+                                                  hsenv-path-prepend-file))
+           (package-db (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file))
+           (suffix (hsenv-select-opt-suffix)))
       (setenv "PATH" (concat  path-prepend ":" (getenv "PATH")))
-      (setq exec-path (append (split-string path-prepend ":") exec-path)))
-    (let ((package-db (hsenv-read-file-content hsenv-dir hsenv-ghc-package-path-file)))
+      (setq exec-path (append (split-string path-prepend ":") exec-path))
       (setenv "PACKAGE_DB_FOR_GHC" 
-              (concat "-no-user-package-db -package-db=" package-db))
+              (concat "-no-user-package-" suffix " -package-" suffix "=" package-db))
       (setenv "PACKAGE_DB_FOR_CABAL" 
               (concat "--package-db=" package-db))
       (setenv "PACKAGE_DB_FOR_GHC_PKG" 
-              (concat "--no-user-package-db --package-db=" package-db))
+              (concat "--no-user-package-" suffix " --package-" suffix "=" package-db))
       (setenv "PACKAGE_DB_FOR_GHC_MOD" 
-              (concat "-g -no-user-package-db -g -package-db=" package-db))
-      (setenv "HASKELL_PACKAGE_SANDBOX" package-db))
-    
-    (setenv "HSENV" env)
-    (setenv "HSENV_NAME" env-name)
-      
-    (message "Environment activated: %s" hsenv-dir)))
+              (concat "-g -no-user-package-" suffix " -g -package-" suffix "=" package-db))
+      (setenv "HASKELL_PACKAGE_SANDBOX" package-db)
+      (setenv "HSENV" env)
+      (setenv "HSENV_NAME" env-name)
+      ; Save an hsenv active environment and backup paths
+      (setq hsenv-active-environment new-hsenv-active-environment)
+      (message "Environment activated: %s" hsenv-dir))))
 
 (defun hsenv-env-name-from-dir (directory)
   "Return the name of an environment based on DIRECTORY."
-  (let ((offs (string-match "[.]hsenv\\([^\\/]*\\)$" directory)))
-    (cond
-     (offs
-      (substring directory (+ 6 offs)))
-     ((string-match "[.]hsenv$" directory)
-      "(default)")
-     (t
-      (error "Not an hsenv directory %s" directory)))))
+  (save-match-data
+    (let ((offs (string-match "[.]hsenv\\([^\\/]*\\)$" directory)))
+      (cond
+       (offs
+        (substring directory (+ 6 offs)))
+       ((string-match "[.]hsenv$" directory)
+        "(default)")
+       (t
+        (error "Not an hsenv directory %s" directory))))))
 
 ;;; Tests:
 ;; (and (equal "foo" (hsenv-env-name-from-dir "/home/bar/baz/.hsenv_foo"))
