@@ -8,7 +8,7 @@
     (when (string-match "\\(\\([0-9]+\\.?\\)+\\)$" version-string)
       (let* ((threshold (or threshold (list 7 6 1)))
              (version (match-string 1 version-string))
-             (version-numbers 
+             (version-numbers
               (mapcar #'string-to-number (split-string version "\\."))))
         (block nil
             (mapcar* #'(lambda (v1 v2)
@@ -72,13 +72,13 @@
            (suffix (hsenv-select-opt-suffix)))
       (setenv "PATH" (concat  path-prepend ":" (getenv "PATH")))
       (setq exec-path (append (split-string path-prepend ":") exec-path))
-      (setenv "PACKAGE_DB_FOR_GHC" 
+      (setenv "PACKAGE_DB_FOR_GHC"
               (concat "-no-user-package-" suffix " -package-" suffix "=" package-db))
-      (setenv "PACKAGE_DB_FOR_CABAL" 
+      (setenv "PACKAGE_DB_FOR_CABAL"
               (concat "--package-db=" package-db))
-      (setenv "PACKAGE_DB_FOR_GHC_PKG" 
+      (setenv "PACKAGE_DB_FOR_GHC_PKG"
               (concat "--no-user-package-" suffix " --package-" suffix "=" package-db))
-      (setenv "PACKAGE_DB_FOR_GHC_MOD" 
+      (setenv "PACKAGE_DB_FOR_GHC_MOD"
               (concat "-g -no-user-package-" suffix " -g -package-" suffix "=" package-db))
       (setenv "HASKELL_PACKAGE_SANDBOX" package-db)
       (setenv "HSENV" env)
@@ -152,8 +152,7 @@
   "Returns an assoc list of all environments avaliable in DIR.
 
 The assoc list contains pairs of the form (NAME . DIRECTORY)."
-  (let ((hsenv-dirs (append (file-expand-wildcards (concat dir ".hsenv"))
-                            (file-expand-wildcards (concat dir ".hsenv_*")))))
+  (let ((hsenv-dirs (directory-files dir nil "^\\.hsenv\\(_.*\\)?$")))
     (mapcar #'hsenv-make-env hsenv-dirs)))
 
 (defun hsenv-activate (&optional select-dir)
