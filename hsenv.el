@@ -94,6 +94,7 @@
     ; Restore paths
     (setenv "PATH" (assoc-default 'path-backup hsenv-active-environment))
     (setq exec-path (assoc-default 'exec-path-backup hsenv-active-environment))
+    ; Unset variables
     (setenv "PACKAGE_DB_FOR_GHC")
     (setenv "PACKAGE_DB_FOR_GHC_PKG")
     (setenv "PACKAGE_DB_FOR_GHC_MOD")
@@ -125,7 +126,7 @@
 
 The assoc list contains pairs of the form (NAME . DIRECTORY)."
   (let ((hsenv-dirs (append (file-expand-wildcards (concat dir ".hsenv"))
-			    (file-expand-wildcards (concat dir ".hsenv*")))))
+                            (file-expand-wildcards (concat dir ".hsenv_*")))))
     (mapcar #'hsenv-make-env hsenv-dirs)))
 
 (defun hsenv-activate (&optional select-dir)
