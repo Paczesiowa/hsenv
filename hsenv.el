@@ -58,7 +58,7 @@
     (replace-regexp-in-string "\n+$" "" (buffer-string))))
 
 (defun hsenv-replace-pkg (template package-dbs)
-  (apply #'concat 
+  (apply #'concat
          (mapcar #'(lambda (db)
                      (concat template db))
                  package-dbs)))
@@ -80,15 +80,15 @@
       (setenv "PATH" (concat  path-prepend ":" (getenv "PATH")))
       (setq exec-path (append (split-string path-prepend ":") exec-path))
       (setenv "PACKAGE_DB_FOR_GHC"
-              (concat "-no-user-package-" suffix 
+              (concat "-no-user-package-" suffix
                       (hsenv-replace-pkg (concat " -package-" suffix "=") package-dbs)))
       (setenv "PACKAGE_DB_FOR_CABAL"
               (hsenv-replace-pkg " --package-db=" package-dbs))
       (setenv "PACKAGE_DB_FOR_GHC_PKG"
-              (concat "--no-user-package-" suffix 
+              (concat "--no-user-package-" suffix
                       (hsenv-replace-pkg (concat " --package-" suffix "=") package-dbs)))
       (setenv "PACKAGE_DB_FOR_GHC_MOD"
-              (concat "-g -no-user-package-" suffix 
+              (concat "-g -no-user-package-" suffix
                       (hsenv-replace-pkg (concat " -g -package-" suffix "=") package-dbs)))
       (setenv "HASKELL_PACKAGE_SANDBOX" package-db)
       (setenv "HSENV" env)
