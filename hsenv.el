@@ -1,3 +1,5 @@
+(require 'cl) ; for mapcar* block and return
+
 (defvar hsenv-active-environment nil)
 
 (defconst hsenv-path-prepend-file "path_var_prependix")
