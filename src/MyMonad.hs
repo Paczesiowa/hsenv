@@ -14,6 +14,7 @@ module MyMonad ( MyMonad
                , tell
                , modify
                , liftIO
+               , action
                ) where
 
 import Types
@@ -85,3 +86,6 @@ warning :: String -> MyMonad ()
 warning str = do
   text <- privateLog str
   liftIO $ hPutStrLn stderr text
+
+action :: String -> MyMonad a -> MyMonad a
+action descr m = info descr >> indentMessages m
