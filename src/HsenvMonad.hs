@@ -15,6 +15,7 @@ module HsenvMonad ( Hsenv
                   , tell
                   , modify
                   , liftIO
+                  , action
                   ) where
 
 import Types
@@ -87,3 +88,6 @@ warning :: String -> Hsenv ()
 warning str = do
   text <- privateLog str
   liftIO $ hPutStrLn stderr text
+
+action :: String -> Hsenv a -> Hsenv a
+action descr m = info descr >> indentMessages m

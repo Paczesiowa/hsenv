@@ -1,6 +1,6 @@
 module CabalBootstrap (bootstrapCabal) where
 
-import System.Directory (doesFileExist, createDirectoryIfMissing, getCurrentDirectory, getAppUserDataDirectory, setCurrentDirectory)
+import qualified System.Directory as Dir
 import System.FilePath ((</>))
 import Network.URI (URI(..), URIAuth(..))
 import Network.HTTP
@@ -58,18 +58,17 @@ fetchHackageIndex = do
       if noSharingFlag then
           return $ cabalDir dirStructure </> "packages"
       else do
-          cabalInstallDir <- liftIO $ getAppUserDataDirectory "cabal"
+          cabalInstallDir <- liftIO $ Dir.getAppUserDataDirectory "cabal"
           return $ cabalInstallDir </> "packages"
   let cacheDir = hackageCache </> hackageDomain
       hackageData = cacheDir </> "00-index.tar"
-  liftIO $ putStrLn hackageData
-  dataExists <- liftIO $ doesFileExist hackageData
+  dataExists <- liftIO $ Dir.doesFileExist hackageData
   if dataExists then
     indentMessages $ debug "It is"
    else do
     indentMessages $ debug "It's not"
     info "Downloading Hackage index"
-    liftIO $ createDirectoryIfMissing True cacheDir
+    liftIO $ Dir.createDirectoryIfMissing True cacheDir
     tarredIndex <- downloadHTTPUncompress indexURI
     liftIO $ BS.writeFile hackageData tarredIndex
 
@@ -81,17 +80,15 @@ readHackageIndex = do
       if noSharingFlag then
           return $ cabalDir dirStructure </> "packages"
       else do
-          cabalInstallDir <- liftIO $ getAppUserDataDirectory "cabal"
+          cabalInstallDir <- liftIO $ Dir.getAppUserDataDirectory "cabal"
           return $ cabalInstallDir </> "packages"
   let cacheDir = hackageCache </> hackageDomain
       hackageIndexLocation = cacheDir </> "00-index.tar"
   liftIO $ readHackage' hackageIndexLocation
 
-chooseCIBVersion :: Hackage -> Hsenv Version
-chooseCIBVersion hackage = do
+chooseCIBVersion :: Hackage -> Version -> Hsenv Version
+chooseCIBVersion hackage cabalVersion = do
   debug "Choosing the right cabal-install-bundle version"
-  cabalVersion <- getHighestVersion (PackageName "Cabal") insideGhcPkg
-  debug $ "Cabal library has version " ++ prettyVersion cabalVersion
   let cibs = hackage ! "cabal-install-bundle"
       cibVersions = keys cibs
   trace $ "Found cabal-install-bundle versions: " ++ unwords (map prettyVersion cibVersions)
@@ -104,11 +101,11 @@ chooseCIBVersion hackage = do
                            ++ "matching installed Cabal library"
     v:vs -> return $ foldr max v vs
 
-bootstrapCabal :: Hsenv ()
-bootstrapCabal = do
+installCabal :: Version -> Hsenv ()
+installCabal cabalVersion = do
   fetchHackageIndex
   hackageIndex <- readHackageIndex
-  cibVersion <- chooseCIBVersion hackageIndex
+  cibVersion <- chooseCIBVersion hackageIndex cabalVersion
   info $ "Using cabal-install-bundle version " ++ prettyVersion cibVersion
   let url = getCIBURI cibVersion
   trace $ "Download URL: " ++ show url
@@ -116,13 +113,13 @@ bootstrapCabal = do
   dirStructure <- hseDirStructure
   let prefix = cabalDir dirStructure
   runInTmpDir $ do
-    cwd <- liftIO getCurrentDirectory
+    cwd <- liftIO Dir.getCurrentDirectory
     trace $ "Unpacking package in " ++ cwd
     liftIO $ Tar.unpack cwd $ Tar.read tarredPkg
     debug "Configuring cabal-install-bundle"
     let pkgDir = cwd </> "cabal-install-bundle-" ++ prettyVersion cibVersion
         setup  = pkgDir </> "Setup.hs"
-    liftIO $ setCurrentDirectory pkgDir
+    liftIO $ Dir.setCurrentDirectory pkgDir
     let cabalSetup args = insideProcess "runghc" (setup:args) Nothing
     _ <- cabalSetup ["configure", "--prefix=" ++ prefix, "--user"]
     debug "Building cabal-install-bundle"
@@ -130,3 +127,36 @@ bootstrapCabal = do
     debug "Installing cabal-install-bundle"
     _ <- cabalSetup ["install"]
     return ()
+
+bootstrapCabal :: Hsenv ()
+bootstrapCabal = action "Bootstrapping cabal-install" $ do
+  cabalVersion <- getHighestVersion (PackageName "Cabal") insideGhcPkg
+  debug $ "Cabal library has version " ++ prettyVersion cabalVersion
+  trace "Checking where cached version of cabal-install would be"
+  versionedCabInsCachePath <- cachedCabalInstallPath cabalVersion
+  let versionedCabInsPath = versionedCabInsCachePath </> "cabal"
+  trace $ "It would be at " ++ versionedCabInsPath
+  dirStructure  <- hseDirStructure
+  flag <- liftIO $ Dir.doesFileExist versionedCabInsPath
+  if flag then do
+      info $ "Using cached copy of cabal-install for Cabal-"
+               ++ prettyVersion cabalVersion
+      let cabInsTarget = cabalBinDir dirStructure </> "cabal"
+      liftIO $ Dir.createDirectoryIfMissing True $ cabalBinDir dirStructure
+      liftIO $ Dir.copyFile versionedCabInsPath cabInsTarget
+   else do
+      info $ concat [ "No cached copy of cabal-install for Cabal-"
+                    , prettyVersion cabalVersion
+                    , ", proceeding with downloading and compilation of"
+                    , " cabal-install-bundle."
+                    , " This can take a few minutes"
+                    ]
+      installCabal cabalVersion
+      let cabInsPath = cabalBinDir dirStructure </> "cabal"
+      debug $ concat [ "Copying compiled cabal-install-bundle binary"
+                     , " for future use (to "
+                     , versionedCabInsPath
+                     , ")"
+                     ]
+      liftIO $ Dir.createDirectoryIfMissing True versionedCabInsCachePath
+      liftIO $ Dir.copyFile cabInsPath versionedCabInsPath
