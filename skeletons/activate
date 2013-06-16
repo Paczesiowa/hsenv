@@ -40,6 +40,7 @@ deactivate_hsenv() {
     unset -v PACKAGE_DB_FOR_CABAL
     unset -v PACKAGE_DB_FOR_GHC_PKG
     unset -v PACKAGE_DB_FOR_GHC
+    unset -v PACKAGE_DB_FOR_GHC_MOD
     unset -v HSENV
     unset -v HSENV_NAME
     unset -v HASKELL_PACKAGE_SANDBOX
