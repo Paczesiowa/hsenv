@@ -129,7 +129,7 @@ Executable hsenv
                , Util.WordWrap
                , Skeletons
                , Types
-               , MyMonad
+               , HsenvMonad
                , Args
                , Paths
                , SanityCheck

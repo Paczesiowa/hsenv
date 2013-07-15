@@ -9,28 +9,28 @@ import Distribution.Version (Version(..))
 import Control.Monad (unless)
 
 import Types
-import MyMonad
+import HsenvMonad
 import Process (outsideProcess', insideProcess)
 import Util.Cabal (prettyPkgInfo, prettyVersion)
 import qualified Util.Cabal (parseVersion, parsePkgInfo)
 
-outsideGhcPkg :: [String] -> MyMonad String
+outsideGhcPkg :: [String] -> Hsenv String
 outsideGhcPkg = outsideProcess' "ghc-pkg"
 
-insideGhcPkg :: [String] -> Maybe String -> MyMonad String
+insideGhcPkg :: [String] -> Maybe String -> Hsenv String
 insideGhcPkg = insideProcess "ghc-pkg"
 
-parseVersion :: String -> MyMonad Version
+parseVersion :: String -> Hsenv Version
 parseVersion s = case Util.Cabal.parseVersion s of
-                    Nothing      -> throwError $ MyException $ "Couldn't parse " ++ s ++ " as a package version"
+                    Nothing      -> throwError $ HsenvException $ "Couldn't parse " ++ s ++ " as a package version"
                     Just version -> return version
 
-parsePkgInfo :: String -> MyMonad PackageIdentifier
+parsePkgInfo :: String -> Hsenv PackageIdentifier
 parsePkgInfo s = case Util.Cabal.parsePkgInfo s of
-                   Nothing      -> throwError $ MyException $ "Couldn't parse package identifier " ++ s
+                   Nothing      -> throwError $ HsenvException $ "Couldn't parse package identifier " ++ s
                    Just pkgInfo -> return pkgInfo
 
-getDeps :: PackageIdentifier -> MyMonad [PackageIdentifier]
+getDeps :: PackageIdentifier -> Hsenv [PackageIdentifier]
 getDeps pkgInfo = do
   let prettyPkg = prettyPkgInfo pkgInfo
   debug $ "Extracting dependencies of " ++ prettyPkg
@@ -39,7 +39,7 @@ getDeps pkgInfo = do
   -- depends: ghc-prim-0.2.0.0-3fbcc20c802efcd7c82089ec77d92990
   --          integer-gmp-0.2.0.0-fa82a0df93dc30b4a7c5654dd7c68cf4 builtin_rts
   case words out of
-    []           -> throwError $ MyException $ "Couldn't parse ghc-pkg output to find dependencies of " ++ prettyPkg
+    []           -> throwError $ HsenvException $ "Couldn't parse ghc-pkg output to find dependencies of " ++ prettyPkg
     _:depStrings -> do -- skip 'depends:'
       indentMessages $ trace $ "Found dependency strings: " ++ unwords depStrings
       mapM parsePkgInfo depStrings
@@ -47,7 +47,7 @@ getDeps pkgInfo = do
 -- things that can be copied from system's GHC pkg database
 -- to GHC pkg database inside virtual environment
 class Transplantable a where
-    transplantPackage :: a -> MyMonad ()
+    transplantPackage :: a -> Hsenv ()
 
 -- choose the highest installed version of package with this name
 instance Transplantable PackageName where
@@ -59,15 +59,15 @@ instance Transplantable PackageName where
         -- example output:
         -- version: 1.1.4
         -- version: 1.2.0.3
-        let extractVersionString :: String -> MyMonad String
+        let extractVersionString :: String -> Hsenv String
             extractVersionString line = case words line of
                                           [_, x] -> return x
-                                          _   -> throwError $ MyException $ "Couldn't extract version string from: " ++ line
+                                          _   -> throwError $ HsenvException $ "Couldn't extract version string from: " ++ line
         versionStrings <- mapM extractVersionString $ lines out
         indentMessages $ trace $ "Found version strings: " ++ unwords versionStrings
         versions <- mapM parseVersion versionStrings
         case versions of
-          []     -> throwError $ MyException $ "No versions of package " ++ packageName ++ " found"
+          []     -> throwError $ HsenvException $ "No versions of package " ++ packageName ++ " found"
           (v:vs) -> do
             indentMessages $ debug $ "Found: " ++ unwords (map prettyVersion versions)
             let highestVersion = foldr max v vs
@@ -76,7 +76,7 @@ instance Transplantable PackageName where
             transplantPackage pkgInfo
 
 -- check if this package is already installed in Virtual Haskell Environment
-checkIfInstalled :: PackageIdentifier -> MyMonad Bool
+checkIfInstalled :: PackageIdentifier -> Hsenv Bool
 checkIfInstalled pkgInfo = do
   let package = prettyPkgInfo pkgInfo
   debug $ "Checking if " ++ package ++ " is already installed."
@@ -101,7 +101,7 @@ instance Transplantable PackageIdentifier where
           movePackage pkgInfo
 
 -- copy single package that already has all deps satisfied
-movePackage :: PackageIdentifier -> MyMonad ()
+movePackage :: PackageIdentifier -> Hsenv ()
 movePackage pkgInfo = do
   let prettyPkg = prettyPkgInfo pkgInfo
   debug $ "Moving package " ++ prettyPkg ++ " to Virtual Haskell Environment."

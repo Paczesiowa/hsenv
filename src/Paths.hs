@@ -11,11 +11,11 @@ import System.Directory (getCurrentDirectory)
 
 import Util.IO (getEnvVar)
 import Types
-import MyMonad
+import HsenvMonad
 
 -- returns record containing paths to all important directories
 -- inside virtual environment dir structure
-hseDirStructure :: MyMonad DirStructure
+hseDirStructure :: Hsenv DirStructure
 hseDirStructure = do
   cwd <- liftIO getCurrentDirectory
   dirName <- dotDirName
@@ -37,19 +37,19 @@ constructDotDirName :: Options -> String
 constructDotDirName opts = maybe ".hsenv" (".hsenv_" ++) (hsEnvName opts)
 
 -- directory name of hsEnvDir
-dotDirName :: MyMonad String
+dotDirName :: Hsenv String
 dotDirName = do
   opts <- ask
   return $ constructDotDirName opts
 
 -- returns location of cabal's config file inside virtual environment dir structure
-cabalConfigLocation :: MyMonad FilePath
+cabalConfigLocation :: Hsenv FilePath
 cabalConfigLocation = do
   dirStructure <- hseDirStructure
   return $ cabalDir dirStructure </> "config"
 
 -- returns value of $PATH env variable to be used inside virtual environment
-insidePathVar :: MyMonad String
+insidePathVar :: Hsenv String
 insidePathVar = do
   oldPathVar <- liftIO $ getEnvVar "PATH"
   let oldPathVarSuffix = case oldPathVar of

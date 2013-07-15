@@ -22,7 +22,7 @@ import Safe (lastMay)
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe, isJust)
 
-import MyMonad
+import HsenvMonad
 import Types
 import Paths
 import PackageManagement
@@ -32,7 +32,7 @@ import Util.IO (makeExecutable, createTemporaryDirectory)
 import Skeletons
 
 -- update cabal package info inside Virtual Haskell Environment
-cabalUpdate :: MyMonad ()
+cabalUpdate :: Hsenv ()
 cabalUpdate = do
   noSharingFlag <- asks noSharing
   if noSharingFlag then do
@@ -61,7 +61,7 @@ cabalUpdate = do
 
 
 -- install cabal wrapper (in bin/ directory) inside virtual environment dir structure
-installCabalWrapper :: MyMonad ()
+installCabalWrapper :: Hsenv ()
 installCabalWrapper = do
   cabalConfig  <- cabalConfigLocation
   dirStructure <- hseDirStructure
@@ -80,7 +80,7 @@ installCabalWrapper = do
   liftIO $ writeFile cabalWrapper cabalWrapperContents
   liftIO $ makeExecutable cabalWrapper
 
-installActivateScriptSupportFiles :: MyMonad ()
+installActivateScriptSupportFiles :: Hsenv ()
 installActivateScriptSupportFiles = do
   debug "installing supporting files"
   dirStructure <- hseDirStructure
@@ -106,7 +106,7 @@ installActivateScriptSupportFiles = do
     liftIO $ writeFile ghcPackagePathVarLocation ghcPackagePathVar
 
 -- install activate script (in bin/ directory) inside virtual environment dir structure
-installActivateScript :: MyMonad ()
+installActivateScript :: Hsenv ()
 installActivateScript = do
   info "Installing activate script"
   hsEnvName'   <- asks hsEnvName
@@ -132,7 +132,7 @@ installActivateScript = do
   indentMessages installActivateScriptSupportFiles
 
 -- install cabal's config file (in cabal/ directory) inside virtual environment dir structure
-installCabalConfig :: MyMonad ()
+installCabalConfig :: Hsenv ()
 installCabalConfig = do
   cabalConfig  <- cabalConfigLocation
   dirStructure <- hseDirStructure
@@ -155,10 +155,10 @@ installCabalConfig = do
     indentMessages $ mapM_ trace $ lines cabalConfigContents
   liftIO $ writeFile cabalConfig cabalConfigContents
 
-installSimpleWrappers :: MyMonad ()
+installSimpleWrappers :: Hsenv ()
 installSimpleWrappers = mapM_ installSimpleWrapper simpleWrappers
 
-installSimpleWrapper :: (String, String) -> MyMonad ()
+installSimpleWrapper :: (String, String) -> Hsenv ()
 installSimpleWrapper (targetFilename, skeleton) = do
     ghcPkgDbPath <- indentMessages ghcPkgDbPathLocation
     dirStructure <- hseDirStructure
@@ -168,7 +168,7 @@ installSimpleWrapper (targetFilename, skeleton) = do
     liftIO $ writeFile ghcWrapper ghcWrapperContents
     liftIO $ makeExecutable ghcWrapper
 
-installProgSymlinks :: MyMonad ()
+installProgSymlinks :: Hsenv ()
 installProgSymlinks = mapM_ installSymlink extraProgs
 
 extraProgs :: [String]
@@ -198,7 +198,7 @@ extraProgs = [ "alex"
              , "uhc"
              ]
 
-installSymlink :: String -> MyMonad ()
+installSymlink :: String -> Hsenv ()
 installSymlink prog = do
     dirStructure <- hseDirStructure
     ghcSourceOpt <- asks ghcSource
@@ -214,13 +214,13 @@ installSymlink prog = do
 -- | Install a symbolic link to a skeleton script in hsenv's bin directory
 symlinkToSkeleton :: String -- ^ Name of skeleton
                   -> String -- ^ Name of link
-                  -> MyMonad ()
+                  -> Hsenv ()
 symlinkToSkeleton skel link = do
     dirStructure <- hseDirStructure
     let prependBinDir = (hsEnvBinDir dirStructure </>)
     liftIO $ createSymbolicLink (prependBinDir skel) (prependBinDir link)
 
-createDirStructure :: MyMonad ()
+createDirStructure :: Hsenv ()
 createDirStructure = do
   dirStructure <- hseDirStructure
   info "Creating Virtual Haskell directory structure"
@@ -233,13 +233,13 @@ createDirStructure = do
     liftIO $ createDirectory $ hsEnvBinDir dirStructure
 
 -- initialize private GHC package database inside virtual environment
-initGhcDb :: MyMonad ()
+initGhcDb :: Hsenv ()
 initGhcDb = do
   dirStructure <- hseDirStructure
   info $ "Initializing GHC Package database at " ++ ghcPackagePath dirStructure
   out <- indentMessages $ outsideGhcPkg ["--version"]
   case lastMay $ words out of
-    Nothing            -> throwError $ MyException $ "Couldn't extract ghc-pkg version number from: " ++ out
+    Nothing            -> throwError $ HsenvException $ "Couldn't extract ghc-pkg version number from: " ++ out
     Just versionString -> do
       indentMessages $ trace $ "Found version string: " ++ versionString
       version <- parseVersion versionString
@@ -253,7 +253,7 @@ initGhcDb = do
 
 -- copy optional packages and don't fail completely if this copying fails
 -- some packages mail fail to copy and it's not fatal (e.g. older GHCs don't have haskell2010)
-transplantOptionalPackage :: String -> MyMonad ()
+transplantOptionalPackage :: String -> Hsenv ()
 transplantOptionalPackage name = transplantPackage (PackageName name) `catchError` handler
   where handler e = do
           warning $ "Failed to copy optional package " ++ name ++ " from system's GHC: "
@@ -269,7 +269,7 @@ transplantOptionalPackage name = transplantPackage (PackageName name) `catchErro
 -- when using GHC from tarball, just reuse its package database
 -- cannot do the same when using system's GHC, because there might be additional packages installed
 -- then it wouldn't be possible to work on them insie virtual environment
-copyBaseSystem :: MyMonad ()
+copyBaseSystem :: Hsenv ()
 copyBaseSystem = do
   info "Copying necessary packages from original GHC package database"
   indentMessages $ do
@@ -281,7 +281,7 @@ copyBaseSystem = do
         mapM_ transplantOptionalPackage ["haskell98", "haskell2010", "ghc", "ghc-binary"]
       _ -> debug "Using external GHC - nothing to copy, Virtual environment will reuse GHC package database"
 
-installGhc :: MyMonad ()
+installGhc :: Hsenv ()
 installGhc = do
   info "Installing GHC"
   ghc <- asks ghcSource
@@ -291,7 +291,7 @@ installGhc = do
     Url url             -> indentMessages $ installRemoteGhc url
     Release tag         -> indentMessages $ installReleasedGhc tag
 
-installExternalGhc :: FilePath -> MyMonad ()
+installExternalGhc :: FilePath -> Hsenv ()
 installExternalGhc tarballPath = do
   info $ "Installing GHC from " ++ tarballPath
   indentMessages $ do
@@ -313,7 +313,7 @@ installExternalGhc tarballPath = do
     liftIO $ removeDirectoryRecursive tmpGhcDir
     return ()
 
-installRemoteGhc :: String -> MyMonad ()
+installRemoteGhc :: String -> Hsenv ()
 installRemoteGhc url = do
     dirStructure <- hseDirStructure
     downloadDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc-download"
@@ -324,7 +324,7 @@ installRemoteGhc url = do
     liftIO $ removeDirectoryRecursive downloadDir
     return ()
 
-installReleasedGhc :: String -> MyMonad ()
+installReleasedGhc :: String -> Hsenv ()
 installReleasedGhc tag = do
     let url = "http://www.haskell.org/ghc/dist/" ++ tag ++ "/ghc-" ++ tag ++ "-" ++ platform ++ ".tar.bz2"
     installRemoteGhc url

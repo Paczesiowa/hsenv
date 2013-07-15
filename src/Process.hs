@@ -4,7 +4,7 @@ module Process ( outsideProcess
                , ghcPkgDbPathLocation
                ) where
 
-import           MyMonad
+import           HsenvMonad
 import           Paths
 import           Types
 
@@ -16,7 +16,7 @@ import           System.Exit        (ExitCode(..))
 import           System.FilePath    ((</>))
 import           System.Process     (readProcessWithExitCode)
 
-runProcess :: Maybe Environment -> FilePath -> [String] -> Maybe String -> MyMonad String
+runProcess :: Maybe Environment -> FilePath -> [String] -> Maybe String -> Hsenv String
 runProcess env prog args input = do
   case input of
     Nothing  -> return ()
@@ -48,30 +48,30 @@ runProcess env prog args input = do
 
   case exitCode of
     ExitSuccess         -> return output
-    ExitFailure errCode -> throwError $ MyException $ prog ++ " process failed with status " ++ show errCode
+    ExitFailure errCode -> throwError $ HsenvException $ prog ++ " process failed with status " ++ show errCode
 
 -- run regular process, takes:
 -- * program name, looks for it in $PATH,
 -- * list of arguments
 -- * maybe standard input
 -- returns standard output
-outsideProcess :: String -> [String] -> Maybe String -> MyMonad String
+outsideProcess :: String -> [String] -> Maybe String -> Hsenv String
 outsideProcess progName args input = do
   debug $ unwords $ ["Running outside process:", progName] ++ args
   indentMessages $ do
     trace $ unwords ["Looking for", progName, "in $PATH"]
     program <- liftIO $ which Nothing progName
     case program of
-      Nothing -> throwError $ MyException $ unwords ["No", progName, "in $PATH"]
+      Nothing -> throwError $ HsenvException $ unwords ["No", progName, "in $PATH"]
       Just programPath -> do
         trace $ unwords [progName, "->", programPath]
         runProcess Nothing programPath args input
 
-outsideProcess' :: String -> [String] -> MyMonad String
+outsideProcess' :: String -> [String] -> Hsenv String
 outsideProcess' progName args = outsideProcess progName args Nothing
 
 -- returns path to GHC (installed from tarball) builtin package database
-externalGhcPkgDb :: MyMonad FilePath
+externalGhcPkgDb :: Hsenv FilePath
 externalGhcPkgDb = do
   trace "Checking where GHC (installed from tarball) keeps its package database"
   indentMessages $ do
@@ -81,10 +81,10 @@ externalGhcPkgDb = do
     ghcPkgOutput <- indentMessages $ runProcess Nothing ghcPkg ["list"] Nothing
     debug "Trying to parse ghc-pkg's output"
     case lines ghcPkgOutput of
-      []             -> throwError $ MyException "ghc-pkg returned empty output"
+      []             -> throwError $ HsenvException "ghc-pkg returned empty output"
       lineWithPath:_ ->
           case lineWithPath of
-            "" -> throwError $ MyException "ghc-pkg's first line of output is empty"
+            "" -> throwError $ HsenvException "ghc-pkg's first line of output is empty"
             _  -> do
               -- ghc-pkg ends pkg db path with trailing colon
               -- but only when not run from the terminal
@@ -94,7 +94,7 @@ externalGhcPkgDb = do
 
 -- returns value of GHC_PACKAGE_PATH that should be used inside virtual environment
 -- defined in this module, because insideProcess needs it
-ghcPkgDbPathLocation :: MyMonad String
+ghcPkgDbPathLocation :: Hsenv String
 ghcPkgDbPathLocation = do
   trace "Determining value of GHC_PACKAGE_PATH to be used inside virtual environment"
   dirStructure <- hseDirStructure
@@ -105,7 +105,7 @@ ghcPkgDbPathLocation = do
              externalGhcPkgDbPath <- indentMessages externalGhcPkgDb
              return $ ghcPackagePath dirStructure ++ ":" ++ externalGhcPkgDbPath
 
-virtualEnvironment :: MyMonad Environment
+virtualEnvironment :: Hsenv Environment
 virtualEnvironment = do
   debug "Calculating unix env dictionary used inside virtual environment"
   indentMessages $ do
@@ -128,7 +128,7 @@ virtualEnvironment = do
 -- returns standard output
 -- process is run in altered environment (new $GHC_PACKAGE_PATH env var,
 -- adjusted $PATH var)
-insideProcess :: String -> [String] -> Maybe String -> MyMonad String
+insideProcess :: String -> [String] -> Maybe String -> Hsenv String
 insideProcess progName args input = do
   debug $ unwords $ ["Running inside process:", progName] ++ args
   indentMessages $ do
@@ -136,7 +136,7 @@ insideProcess progName args input = do
     trace $ unwords ["Looking for", progName, "in", pathVar]
     program <- liftIO $ which (Just pathVar) progName
     case program of
-      Nothing -> throwError $ MyException $ unwords ["No", progName, "in", pathVar]
+      Nothing -> throwError $ HsenvException $ unwords ["No", progName, "in", pathVar]
       Just programPath -> do
         trace $ unwords [progName, "->", programPath]
         env <- virtualEnvironment

@@ -1,9 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Types ( GhcSource(..)
              , Options(..)
-             , MyState(..)
+             , HsenvState(..)
              , DirStructure(..)
-             , MyException(..)
+             , HsenvException(..)
              , Verbosity(..)
              ) where
 
@@ -28,10 +28,10 @@ data Options = Options { verbosity       :: Verbosity
                        , noPS1           :: Bool   -- Don't modify shell prompt
                        }
 
-data MyState = MyState { logDepth :: Integer -- used for indentation of logging messages
+data HsenvState = HsenvState { logDepth :: Integer -- used for indentation of logging messages
                        }
 
-newtype MyException = MyException { getExceptionMessage :: String }
+newtype HsenvException = HsenvException { getExceptionMessage :: String }
     deriving Error
 
 -- Only absolute paths!

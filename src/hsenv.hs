@@ -3,7 +3,7 @@ import System.Exit (exitFailure)
 import System.FilePath ((</>))
 
 import Types
-import MyMonad
+import HsenvMonad
 import Actions
 import SanityCheck (sanityCheck)
 import Args (getArgs)
@@ -12,7 +12,7 @@ import Paths (dotDirName, constructDotDirName)
 main :: IO ()
 main = do
   options <- getArgs
-  (result, messageLog) <- runMyMonad realMain options
+  (result, messageLog) <- runHsenv realMain options
   case result of
     Left err -> do
                 hPutStrLn stderr $ getExceptionMessage err
@@ -25,7 +25,7 @@ main = do
                 let dotDir = constructDotDirName options
                 writeFile (dotDir </> "hsenv.log") $ unlines messageLog
 
-realMain :: MyMonad ()
+realMain :: Hsenv ()
 realMain = do
   skipSanityCheckFlag <- asks skipSanityCheck
   if skipSanityCheckFlag then
