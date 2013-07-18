@@ -320,10 +320,16 @@ installExternalGhc tarballPath = do
 -- Download a file over HTTP using streams, so it
 -- has constant memory allocation.
 downloadFile :: URL -> FilePath -> Hsenv ()
-downloadFile url name = liftIO $ get url $ \response inStream -> 
+downloadFile url name = do
+  m_ex <- liftIO $ get url $ \response inStream ->
     case getStatusCode response of
-      200 -> S.withFileAsOutput name (S.connect inStream)
-      code -> error $ "Failed to download " ++ name ++ ": http response returned " ++ show code
+      200 -> S.withFileAsOutput name (S.connect inStream) >> return Nothing
+      code -> return $ Just $ HsenvException $
+        "Failed to download "
+          ++ name
+          ++ ": http response returned "
+          ++ show code
+  maybe (return ()) throwError m_ex
 
 installRemoteGhc :: String -> Hsenv ()
 installRemoteGhc url = do
