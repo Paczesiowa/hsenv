@@ -22,6 +22,10 @@ import Safe (lastMay)
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe, isJust)
 
+import Network.Http.Client
+import qualified Data.ByteString.Char8 as C8
+import qualified System.IO.Streams as S
+
 import HsenvMonad
 import Types
 import Paths
@@ -313,13 +317,21 @@ installExternalGhc tarballPath = do
     liftIO $ removeDirectoryRecursive tmpGhcDir
     return ()
 
+-- Download a file over HTTP using streams, so it
+-- has constant memory allocation.
+downloadFile :: URL -> FilePath -> Hsenv ()
+downloadFile url name = liftIO $ get url $ \response inStream -> 
+    case getStatusCode response of
+      200 -> S.withFileAsOutput name (S.connect inStream)
+      code -> error $ "Failed to download " ++ name ++ ": http response returned " ++ show code
+
 installRemoteGhc :: String -> Hsenv ()
 installRemoteGhc url = do
     dirStructure <- hseDirStructure
     downloadDir <- liftIO $ createTemporaryDirectory (hsEnv dirStructure) "ghc-download"
     let tarball = downloadDir </> "tarball"
     debug $ "Downloading GHC from " ++ url
-    _ <- indentMessages $ outsideProcess' "curl" ["-fL", "--retry", "2", url, "-o", tarball]
+    downloadFile (C8.pack url) tarball
     installExternalGhc tarball
     liftIO $ removeDirectoryRecursive downloadDir
     return ()
