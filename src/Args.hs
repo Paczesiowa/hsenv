@@ -108,7 +108,7 @@ getArgs :: IO Options
 getArgs = parseArgs argParser versionString outro
   where
     outro = "Creates Virtual Haskell Environment in the current directory.\n"
-         ++ "All files will be stored in the .hsenv_ENVNAME/ subdirectory."
+         ++ "All files will be stored in the .hsenv[_NAME]/ subdirectory."
 
 isVersion :: String -> Bool
 isVersion s = case dropWhile isDigit s of
