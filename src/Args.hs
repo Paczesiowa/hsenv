@@ -108,7 +108,15 @@ getArgs :: IO Options
 getArgs = parseArgs argParser versionString outro
   where
     outro = "Creates Virtual Haskell Environment in the current directory.\n"
-         ++ "All files will be stored in the .hsenv[_NAME]/ subdirectory."
+         ++ "All files will be stored in the .hsenv[_NAME]/ subdirectory.\n"
+         ++ "\n"
+         ++ "To activate a sandbox in the current directory, run:\n"
+         ++ "\n"
+         ++ "    source .hsenv/bin/activate\n"
+         ++ "\n"
+         ++ "To deactivate an active sandbox, run:\n"
+         ++ "\n"
+         ++ "    deactivate_hsenv"
 
 isVersion :: String -> Bool
 isVersion s = case dropWhile isDigit s of
