@@ -40,7 +40,6 @@ usage :: ArgArrow a b -> String -> IO String
 usage arrow outro = do
   self <- getProgName
   let intro = "usage: " ++ self ++ " [FLAGS]"
-  return $ unlines $ [intro, "", "Flags:"] ++ flagsDescr ++ [""] ++  outro'
+  return $ unlines $ [intro, "", "Flags:"] ++ flagsDescr ++ [""] ++ [outro]
       where flagsDescr = concatMap showFlagDescr $ argDescrSort $ getKnownArgs arrow
             argDescrSort = sortBy (compare `on` argName)
-            outro' = wordWrap 80 outro
