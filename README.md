@@ -23,21 +23,21 @@ your cabalized project (if you want to work on a few projects
 (perhaps an app and its dependent library), just choose any of them,
 it doesn't really matter). Enter that directory:
 
-```
-> cd ~/projects/foo
+```bash
+cd ~/projects/foo
 ```
 
 Next, create your new isolated Haskell environment
 (this is a one-time-only (per environment) step):
 
-```
-> hsenv
+```bash
+hsenv
 ```
 
 Now, every time you want to use this environment, you have to activate it:
 
-```
-> source .hsenv/bin/activate
+```bash
+source .hsenv/bin/activate
 ```
 
 That's it! Now it's possible to use all regular Haskell tools like usual, but
@@ -50,8 +50,8 @@ basic packages, mostly ghc and Cabal and their deps).
 When you're done working with this environment, enter command `deactivate_hsenv`,
 or just close the current shell (with exit).
 
-```
-> deactivate_hsenv
+```bash
+deactivate_hsenv
 ```
 
 Named vs Unnamed Environments
@@ -62,8 +62,8 @@ particular use cases you might want to create different environments under
 the same directory. This is achievable creating a "named" environment. To
 do that, just pass the flag `--name=<ENVIRONMENT_NAME>` to hsenv:
 
-```
-> hsenv --name=<ENVIRONMENT_NAME>
+```bash
+hsenv --name=<ENVIRONMENT_NAME>
 ```
 
 This will make hsenv generate a folder of the form `.hsenv_<ENVIRONMENT_NAME>`.
@@ -82,55 +82,55 @@ First, download the binary distribution of GHC for your platform
 
 Create a directory for you environment:
 
-```
-> mkdir /tmp/test
-> cd /tmp/test
+```bash
+mkdir /tmp/test
+cd /tmp/test
 ```
 
 Then, create a new environment using that GHC:
 
-```
-> hsenv --name=test --ghc=/path/to/ghc-7.3.20111105-i386-unknown-linux.tar.bz2
+```bash
+hsenv --name=test --ghc=/path/to/ghc-7.3.20111105-i386-unknown-linux.tar.bz2
 ```
 
 Activate it:
 
-```
-> source .hsenv_test/bin/activate
+```bash
+source .hsenv_test/bin/activate
 ```
 
 Download a copy of json library and your private version of parsec:
 
-```
-> darcs get http://patch-tag.com/r/Paczesiowa/parsec
-> cabal unpack json
+```bash
+darcs get http://patch-tag.com/r/Paczesiowa/parsec
+cabal unpack json
 ```
 
 Install parsec:
 
-```
-> cd parsec2
-> cabal install
+```bash
+cd parsec2
+cabal install
 ```
 
 Install the rest of the json deps:
 
-```
-> cd ../json-0.5
-> cabal install --only-dependencies
+```bash
+cd ../json-0.5
+cabal install --only-dependencies
 ```
 
 Now, let's say you want to hack on Parsec module of json library.
 Open it in emacs:
 
-```
-> emacsclient Text/JSON/Parsec.hs
+```bash
+emacsclient Text/JSON/Parsec.hs
 ```
 
 Activate the virtual environment (hsenv must be required earlier):
 
 ```
-> M-x hsenv-activate <RET> /tmp/test/ <RET>
+M-x hsenv-activate <RET> /tmp/test/ <RET>
 ```
 
 Edit some code and load it in ghci using 'C-c C-l'. If it type checks,
@@ -138,8 +138,8 @@ you can play around with the code using nightly version of ghci running
 in your virtual environment. When you're happy with the code, exit emacs
 and install your edited json library:
 
-```
-> cabal install
+```bash
+cabal install
 ```
 
 And that's it.
@@ -151,14 +151,14 @@ Recent versions of hsenv include the possibility to automatically download and
 install a GHC version directly from the GHC main repository. To do that, all
 you need to do is to pass the desired version of GHC you want to install:
 
-```
-> hsenv --ghc=7.4.1
+```bash
+hsenv --ghc=7.4.1
 ```
 
 Or a valid URL pointing to a compressed GHC archive:
 
-```
-> hsenv --ghc=http://www.haskell.org/ghc/dist/7.6.3/ghc-7.6.3-x86_64-apple-darwin.tar.bz2
+```bash
+hsenv --ghc=http://www.haskell.org/ghc/dist/7.6.3/ghc-7.6.3-x86_64-apple-darwin.tar.bz2
 ```
 
 Misc
@@ -246,7 +246,7 @@ between different environments.
 A: Yes, if you really know what you're doing. Here's a snippet for bash, which
    will activate both named and unnamed environments:
 
-```
+```bash
     function precmd() {
         if [[ -z $HSENV ]]; then
             NUMBER_OF_ENVS=$(find . -maxdepth 1 -type d -name ".hsenv*" | wc -l)
