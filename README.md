@@ -52,11 +52,13 @@ Named vs Unnamed Environments
 By default, hsenv creates an "unnamed" environment, but sometimes for
 particular use cases you might want to create different environments under
 the same directory. This is achievable creating a "named" environment. To
-do that, just pass the flag "--name=<ENVIRONMENT_NAME>" to hsenv:
+do that, just pass the flag `--name=<ENVIRONMENT_NAME>` to hsenv:
 
+```
 > hsenv --name=<ENVIRONMENT_NAME>
+```
 
-This will make hsenv to generate a folder of the form ".hsenv_<ENVIRONMENT_NAME>".
+This will make hsenv to generate a folder of the form ```.hsenv_<ENVIRONMENT_NAME>```.
 
 Advanced usage
 --------------
