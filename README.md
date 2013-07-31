@@ -1,5 +1,5 @@
-Virtual Haskell Environment
-===========================
+hsenv - Virtual Haskell Environment
+===================================
 
 What is it?
 -----------
@@ -9,11 +9,11 @@ to create isolated Haskell environments.
 
 What does it do?
 ----------------
-It creates a sandboxed environment in a .hsenv/ sub-directory
-of your project, which, when activated, allows you to use regular Haskell tools
-(ghc, ghci, ghc-pkg, cabal) to manage your Haskell code and environment.
-It's possible to create an environment, that uses different GHC version
-than your currently installed. Very simple emacs integration mode is included.
+It creates a sandboxed environment in a .hsenv/ subdirectory of your project,
+which, when activated, allows you to use regular Haskell tools (ghc, ghci,
+ghc-pkg, cabal) to manage your Haskell code and environment. It's possible to
+create an environment, that uses a different GHC version than your currently
+installed system GHC version. Very simple emacs integration mode is included.
 
 Basic usage
 -----------
@@ -28,7 +28,7 @@ it doesn't really matter). Enter that directory:
 ```
 
 Next, create your new isolated Haskell environment
-(this is a one time only (per environment) step):
+(this is a one-time-only (per environment) step):
 
 ```
 > hsenv
@@ -40,15 +40,14 @@ Now, every time you want to use this environment, you have to activate it:
 > source .hsenv/bin/activate
 ```
 
-That's it! Now it's possible to use all regular Haskell tools like usual,
-but it won't affect your global/system's Haskell environment, and also
-your per-user environment (from ~/.cabal and ~/.ghc) will stay the same.
-All cabal-installed packages will be private to this environment,
-and also the external environments (global and user) will not affect it
-(this environment will only inherit very basic packages,
-mostly ghc and Cabal and their deps).
+That's it! Now it's possible to use all regular Haskell tools like usual, but
+it won't affect your global/system Haskell environment, and also your per-user
+environment (from ~/.cabal and ~/.ghc) will stay the same. All cabal-installed
+packages will be private to this environment, and the external environments
+(global and user) will not affect it (this environment will only inherit very
+basic packages, mostly ghc and Cabal and their deps).
 
-When you're done working with this environment, enter command 'deactivate_hsenv',
+When you're done working with this environment, enter command `deactivate_hsenv`,
 or just close the current shell (with exit).
 
 ```
@@ -56,7 +55,8 @@ or just close the current shell (with exit).
 ```
 
 Named vs Unnamed Environments
-----------------
+-----------------------------
+
 By default, hsenv creates an "unnamed" environment, but sometimes for
 particular use cases you might want to create different environments under
 the same directory. This is achievable creating a "named" environment. To
@@ -66,24 +66,25 @@ do that, just pass the flag `--name=<ENVIRONMENT_NAME>` to hsenv:
 > hsenv --name=<ENVIRONMENT_NAME>
 ```
 
-This will make hsenv to generate a folder of the form ```.hsenv_<ENVIRONMENT_NAME>```.
+This will make hsenv generate a folder of the form `.hsenv_<ENVIRONMENT_NAME>`.
 
 Advanced usage
 --------------
 Here's the most advanced usage of hsenv. Let's say you want to:
 
-* hack on json library
-* do so comfortably
-* use your own version of parsec library
-* and do all this using nightly version of GHC
+* Hack on a json library
+* Do so comfortably
+* Use your own version of the parsec library
+* And do all this using the nightly version of GHC
 
-First, download binary distribution of GHC for your platform
+First, download the binary distribution of GHC for your platform
 (e.g. ghc-7.3.20111105-i386-unknown-linux.tar.bz2).
 
 Create a directory for you environment:
 
 ```
-> mkdir /tmp/test; cd /tmp/test
+> mkdir /tmp/test
+> cd /tmp/test
 ```
 
 Then, create a new environment using that GHC:
@@ -101,19 +102,22 @@ Activate it:
 Download a copy of json library and your private version of parsec:
 
 ```
-> darcs get http://patch-tag.com/r/Paczesiowa/parsec; cabal unpack json
+> darcs get http://patch-tag.com/r/Paczesiowa/parsec
+> cabal unpack json
 ```
 
 Install parsec:
 
 ```
-> cd parsec2; cabal install
+> cd parsec2
+> cabal install
 ```
 
-Install the rest of json deps:
+Install the rest of the json deps:
 
 ```
-> cd ../json-0.5; cabal install --only-dependencies
+> cd ../json-0.5
+> cabal install --only-dependencies
 ```
 
 Now, let's say you want to hack on Parsec module of json library.
@@ -142,10 +146,10 @@ And that's it.
 
 Fetching and downloading a remote version of GHC
 ------------------------------------------------
-Recent versions of hsenv include the possibility to automatically download
-and install a GHC version directly from the GHC main repository. To do that,
-as regards the example above, all you need to do is to pass the desired version
-of GHC you want to install:
+
+Recent versions of hsenv include the possibility to automatically download and
+install a GHC version directly from the GHC main repository. To do that, all
+you need to do is to pass the desired version of GHC you want to install:
 
 ```
 > hsenv --ghc=7.4.1
@@ -159,11 +163,12 @@ Or a valid URL pointing to a compressed GHC archive:
 
 Misc
 ----
-hsenv has been tested on i386 Linux and FreeBSD systems,
-but it should work on any Posix platform. External (from tarball) GHC feature
-requires binary GHC distribution compiled for your platform,
-that can be extracted with tar and installed with
-"./configure --prefix=PATH; make install".
+
+hsenv has been tested on Linux, Mac OS X, and FreeBSD systems, but it should
+work on any POSIX platform. The external (from tarball) GHC feature requires
+a binary GHC distribution compiled for your platform which that can be
+extracted with tar and installed with "./configure --prefix=PATH; make
+install".
 
 FAQ
 ---
@@ -173,10 +178,10 @@ A: No. All these tools work more or less the same (wrapping cabal command,
    setting GHC_PACKAGE_PATH env variable), so something will probably break.
 
 
-**Q: Using GHC from tarball fails, when using FreeBSD with a bunch of make tool
-   gibberish. What do I do?**
+**Q: Using GHC from tarball fails with a bunch of make tool gibberish on
+FreeBSD. What do I do?**
 
-A: Try '--make-cmd=gmake' switch.
+A: Try the '--make-cmd=gmake' switch.
 
 
 **Q: Can I use hsenv inside hsenv?**
@@ -186,7 +191,7 @@ A: No. It may be supported in future versions.
 
 **Q: Does it work on x64 systems?**
 
-A: It hasn't been tested, but there's no reason why it shouldn't.
+A: Yes.
 
 
 **Q: Will it work on Mac?**
@@ -196,12 +201,12 @@ A: Yes.
 
 **Q: Will it work on Windows?**
 
-A: I really doubt it would even compile. I don't have access to any windows
+A: I really doubt it would even compile. I don't have access to any Windows
    machines, so you're on your own, but patches/ideas/questions are welcome.
-   Maybe it would work on cygwin.
+   Maybe it would work on Cygwin.
 
 
-**Q: Does it require bash?**
+**Q: Does it require Bash?**
 
 A: No, it should work with any POSIX-compliant shell. It's been tested with
    bash, bash --posix, dash, zsh and ksh.
@@ -228,10 +233,12 @@ A: Yes. The only (minor) exception is ghci history - there's only one
 
 
 **Q: Can I share one cabalized project directory among multiple environments
-   (e.g. build cabalized project in the same dir using different environments)?**
+(e.g. build a cabalized project in the same directory using different
+environments)?**
 
-A: Yes. hsenv also overrides cabal with a wrapper, that will force using different
-   builddirs, so there shouldn't be even any recompilation between different environments.
+A: Yes. hsenv also overrides cabal with a wrapper, that will force using
+different build directories, so there shouldn't be even any recompilation
+between different environments.
 
 
 **Q: Is it possible to activate an environment upon entering its directory?**
