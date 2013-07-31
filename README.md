@@ -142,7 +142,7 @@ And that's it.
 
 Fetching and downloading a remote version of GHC
 ------------------------------------------------
-Recent versions of hsenv includes the possibility to automatically download
+Recent versions of hsenv include the possibility to automatically download
 and install a GHC version directly from the GHC main repository. To do that,
 as regards the example above, all you need to do is to pass the desired version
 of GHC you want to install:
@@ -151,7 +151,7 @@ of GHC you want to install:
 > hsenv --ghc=7.4.1
 ```
 
-You can even pass a URL:
+Or a valid URL pointing to a compressed GHC archive:
 
 ```
 > hsenv --ghc=http://www.haskell.org/ghc/dist/7.6.3/ghc-7.6.3-x86_64-apple-darwin.tar.bz2
