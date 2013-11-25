@@ -34,7 +34,7 @@ indexURI = URI { uriScheme    = "http:"
 
 getCIBURI :: Version -> URI
 getCIBURI version = indexURI {uriPath = cibpath}
-    where cibpath = concat [ "/packages/archive/cabal-install-bundle/"
+    where cibpath = concat [ "/package/cabal-install-bundle-"
                            , ver
                            , "/cabal-install-bundle-"
                            , ver
