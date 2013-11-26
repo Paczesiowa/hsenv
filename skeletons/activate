@@ -10,6 +10,13 @@ if [ -n "${HSENV}" ]; then
     return 1
 fi
 
+# Source a user script.
+hsenv_bin() {
+    if [ -f ~/.hsenv/bin/$1 ]; then
+        . ~/.hsenv/bin/$1
+    fi
+}
+
 export HSENV="<HSENV>"
 export HSENV_NAME="<HSENV_NAME>"
 
@@ -18,6 +25,8 @@ echo ""
 echo "Use regular Haskell tools (ghc, ghci, ghc-pkg, cabal) to manage your Haskell environment."
 echo ""
 echo "To exit from this virtual environment, enter command 'deactivate_hsenv'."
+
+hsenv_bin pre-activate
 
 HSENV_PATH_BACKUP="$PATH"
 
@@ -29,6 +38,8 @@ deactivate_hsenv() {
     echo "Deactivating ${HSENV_NAME} Virtual Haskell Environment (at ${HSENV})."
     echo "Restoring previous environment settings."
 
+    hsenv_bin pre-deactivate
+
     export PATH="$HSENV_PATH_BACKUP"
     unset -v HSENV_PATH_BACKUP
 
@@ -36,6 +47,8 @@ deactivate_hsenv() {
         PS1="$HSENV_PS1_BACKUP"
         unset -v HSENV_PS1_BACKUP
     fi
+
+    hsenv_bin post-deactivate
 
     unset -v PACKAGE_DB_FOR_CABAL
     unset -v PACKAGE_DB_FOR_GHC_PKG
@@ -45,6 +58,7 @@ deactivate_hsenv() {
     unset -v HSENV_NAME
     unset -v HASKELL_PACKAGE_SANDBOX
     unset -f deactivate_hsenv
+    unset -f hsenv_bin
 
     if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
         hash -r
@@ -117,3 +131,5 @@ unset -v GHC_PACKAGE_PATH_REPLACEMENT
 if [ -n "$BASH" -o -n "$ZSH_VERSION" ]; then
     hash -r
 fi
+
+hsenv_bin post-activate

@@ -68,6 +68,14 @@ hsenv --name=<ENVIRONMENT_NAME>
 
 This will make hsenv generate a folder of the form `.hsenv_<ENVIRONMENT_NAME>`.
 
+Customization
+-------------
+
+If you want to customize activation and deactivation, create one or more of the
+following files in ~/.hsenv/bin/: pre-activate, post-activate, pre-deactivate,
+post-deactivate. These shell scripts will be sourced automatically by the main
+activation script.
+
 Advanced usage
 --------------
 Here's the most advanced usage of hsenv. Let's say you want to:
