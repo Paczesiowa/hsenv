@@ -60,5 +60,6 @@ sanityCheck :: Hsenv ()
 sanityCheck = do
   checkHSE
   checkHsenvAlreadyExists
-  checkCabalInstall
+  bootstrappingCabal <- asks cabalBootstrap
+  when (not bootstrappingCabal) checkCabalInstall
   checkGhc
