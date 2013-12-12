@@ -1,7 +1,9 @@
 module Process ( outsideProcess
                , outsideProcess'
                , insideProcess
+               , insideProcess'
                , ghcPkgDbPathLocation
+               , externalGhcPkgDb
                ) where
 
 import           HsenvMonad
@@ -129,7 +131,11 @@ virtualEnvironment = do
 -- process is run in altered environment (new $GHC_PACKAGE_PATH env var,
 -- adjusted $PATH var)
 insideProcess :: String -> [String] -> Maybe String -> Hsenv String
-insideProcess progName args input = do
+insideProcess = insideProcess' False
+
+-- like insideProcess, but if skipGhcPkgPathVar is True, GHC_PACKAGE_PATH is not added
+insideProcess' :: Bool -> String -> [String] -> Maybe String -> Hsenv String
+insideProcess' skipGhcPkgPathVar progName args input = do
   debug $ unwords $ ["Running inside process:", progName] ++ args
   indentMessages $ do
     pathVar <- insidePathVar
@@ -140,4 +146,8 @@ insideProcess progName args input = do
       Just programPath -> do
         trace $ unwords [progName, "->", programPath]
         env <- virtualEnvironment
-        runProcess (Just env) programPath args input
+        let env' = if skipGhcPkgPathVar then
+                       filter (\(k, _) -> k /= "GHC_PACKAGE_PATH") env
+                   else
+                       env
+        runProcess (Just env') programPath args input

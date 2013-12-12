@@ -14,7 +14,7 @@ import Types
 import HsenvMonad
 import HsenvMonadUtils
 import Paths
-import Process (insideProcess)
+import Process (insideProcess, insideProcess', externalGhcPkgDb)
 import PackageManagement (insideGhcPkg, getHighestVersion)
 import Util.Cabal (prettyVersion, executableMatchesCabal)
 
@@ -101,6 +101,32 @@ chooseCIBVersion hackage cabalVersion = do
                            ++ "matching installed Cabal library"
     v:vs -> return $ foldr max v vs
 
+runSetupHsConfigure :: FilePath -> Hsenv ()
+runSetupHsConfigure setupHsPath = do
+  cabalVersion <- getHighestVersion (PackageName "Cabal") insideGhcPkg
+  dirStructure <- hseDirStructure
+  let cabal_1_16_0_version = Version [1, 16, 0] []
+  _ <- indentMessages $
+    if cabalVersion >= cabal_1_16_0_version then do
+      debug "Cabal has version >= 1.16.0, using new --package-db args"
+      debug "  instead of relying on $GHC_PACKAGE_PATH variable"
+      ghcPkgDbPath <- indentMessages externalGhcPkgDb
+      let args = [ setupHsPath
+                 , "configure"
+                 , "--prefix=" ++ cabalDir dirStructure
+                 , "--package-db=" ++ ghcPkgDbPath
+                 , "--package-db=" ++ ghcPackagePath dirStructure
+                 ]
+      insideProcess' True "runghc" args Nothing
+    else do
+      let args = [ setupHsPath
+                 , "configure"
+                 , "--prefix=" ++ cabalDir dirStructure
+                 , "--user"
+                 ]
+      insideProcess "runghc" args Nothing
+  return ()
+
 installCabal :: Version -> Hsenv ()
 installCabal cabalVersion = do
   fetchHackageIndex
@@ -110,8 +136,6 @@ installCabal cabalVersion = do
   let url = getCIBURI cibVersion
   trace $ "Download URL: " ++ show url
   tarredPkg <- downloadHTTPUncompress url
-  dirStructure <- hseDirStructure
-  let prefix = cabalDir dirStructure
   runInTmpDir $ do
     cwd <- liftIO Dir.getCurrentDirectory
     trace $ "Unpacking package in " ++ cwd
@@ -121,7 +145,7 @@ installCabal cabalVersion = do
         setup  = pkgDir </> "Setup.hs"
     liftIO $ Dir.setCurrentDirectory pkgDir
     let cabalSetup args = insideProcess "runghc" (setup:args) Nothing
-    _ <- cabalSetup ["configure", "--prefix=" ++ prefix, "--user"]
+    _ <- runSetupHsConfigure setup
     debug "Building cabal-install-bundle"
     _ <- cabalSetup ["build"]
     debug "Installing cabal-install-bundle"
