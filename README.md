@@ -267,3 +267,11 @@ A: Yes, if you really know what you're doing. Here's a snippet for bash, which
     }
     export PROMPT_COMMAND=precmd
 ```
+
+
+**Q: Can I use hsenv on a machine, that doesn't have cabal binary (from
+     cabal-install package) installed?**
+
+A: Yes. Just use the '--bootstrap-cabal' switch. In fact, you can use hsenv on
+   a machine that doesn't have anything Haskell-related installed - just
+   combine '--ghc=' and '--bootstrap-cabal' options.
