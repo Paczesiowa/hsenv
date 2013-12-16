@@ -36,7 +36,8 @@ checkCabalInstall = do
   cabalInstallPath <- liftIO $ which Nothing "cabal"
   case cabalInstallPath of
     Just _  -> return ()
-    Nothing -> throwError $ HsenvException "Couldn't find cabal binary (from cabal-install package) in your $PATH."
+    Nothing -> throwError $ HsenvException $ "Couldn't find cabal binary (from cabal-install package) in your $PATH." ++
+                                              "You could try using '--bootstrap-cabal' switch."
 
 -- check if GHC tools (ghc, ghc-pkg) exist on PATH
 -- skip the check if using GHC from a tarball
