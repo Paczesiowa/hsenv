@@ -27,7 +27,7 @@ indexURI = URI { uriScheme    = "http:"
                                              , uriRegName  = hackageDomain
                                              , uriPort     = ""
                                              }
-               , uriPath      = "/packages/archive/00-index.tar.gz"
+               , uriPath      = "/packages/index.tar.gz"
                , uriQuery     = ""
                , uriFragment  = ""
                }
